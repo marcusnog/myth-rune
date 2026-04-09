@@ -239,6 +239,78 @@ function parseResourceObjects(tilemap: Phaser.Tilemaps.Tilemap): ResourceNodeMap
   return result;
 }
 
+function augmentForestTrees(params: {
+  tilemap: Phaser.Tilemaps.Tilemap;
+  collisionLayer: Phaser.Tilemaps.TilemapLayer | null;
+  baseNodes: ResourceNodeMapConfig[];
+  extraCount: number;
+  safeCenterTileX: number;
+  safeCenterTileY: number;
+}): ResourceNodeMapConfig[] {
+  const { tilemap, collisionLayer, baseNodes, extraCount, safeCenterTileX, safeCenterTileY } =
+    params;
+  if (extraCount <= 0 || baseNodes.length === 0) {
+    return baseNodes;
+  }
+
+  const safeRadius = 14;
+  const width = tilemap.width ?? 0;
+  const height = tilemap.height ?? 0;
+  const key = (x: number, y: number) => `${x}:${y}`;
+  const occupied = new Set(baseNodes.map((n) => key(n.tileX, n.tileY)));
+  const augmented = baseNodes.slice();
+
+  const deltas: ReadonlyArray<[number, number]> = [
+    [-3, -2], [-2, -3], [-2, 0], [-2, 2],
+    [0, -2], [0, 2], [2, -2], [2, 0],
+    [2, 2], [3, 1], [-3, 1], [1, 3],
+    [-1, 3], [1, -3], [-1, -3],
+  ];
+
+  const isBlocked = (tileX: number, tileY: number): boolean => {
+    if (!collisionLayer) return false;
+    const tile = collisionLayer.getTileAt(tileX, tileY);
+    return Boolean(tile && tile.index > 0);
+  };
+
+  const tooCloseToSafeZone = (tileX: number, tileY: number): boolean => {
+    return (
+      Math.abs(tileX - safeCenterTileX) <= safeRadius &&
+      Math.abs(tileY - safeCenterTileY) <= safeRadius
+    );
+  };
+
+  let created = 0;
+  for (let attempt = 0; attempt < extraCount * 30 && created < extraCount; attempt += 1) {
+    const base = baseNodes[Math.floor(Math.random() * baseNodes.length)]!;
+    const [dx, dy] = deltas[Math.floor(Math.random() * deltas.length)]!;
+    const tileX = base.tileX + dx;
+    const tileY = base.tileY + dy;
+
+    if (tileX < 0 || tileY < 0 || tileX >= width || tileY >= height) continue;
+    if (tooCloseToSafeZone(tileX, tileY)) continue;
+    if (occupied.has(key(tileX, tileY))) continue;
+    if (isBlocked(tileX, tileY)) continue;
+
+    const id = `wood_extra_${created + 1}`;
+    occupied.add(key(tileX, tileY));
+    augmented.push({
+      nodeId: id,
+      type: Math.random() < 0.55 ? "oak_tree" : "pine_tree",
+      tileX,
+      tileY,
+      quantity: 3,
+      gatherTimeMs: Math.random() < 0.55 ? 1600 : 1750,
+      respawnTimeMs: 300000,
+      yieldItemId: "wood",
+      yieldAmount: 1,
+    });
+    created += 1;
+  }
+
+  return augmented;
+}
+
 export function preloadStarterTownAssets(scene: Phaser.Scene): void {
   scene.load.tilemapTiledJSON(MAP_KEY, "/maps/starter_town/map.json");
   scene.load.image(MAP_TILESET_IMAGE_KEY, "/maps/starter_town/tileset.png");
@@ -439,6 +511,16 @@ export function buildStarterTownWorld(scene: Phaser.Scene): StarterTownWorld {
     mapOffsetY,
   );
 
+  const baseResourceNodes = parseResourceObjects(tilemap);
+  const resourceNodes = augmentForestTrees({
+    tilemap,
+    collisionLayer,
+    baseNodes: baseResourceNodes,
+    extraCount: 18,
+    safeCenterTileX: centerX,
+    safeCenterTileY: centerY,
+  });
+
   return {
     tilemap,
     collisionLayer,
@@ -450,7 +532,7 @@ export function buildStarterTownWorld(scene: Phaser.Scene): StarterTownWorld {
     worldMaxY: mapOffsetY + tilemap.heightInPixels,
     tileWidth: tilemap.tileWidth,
     tileHeight: tilemap.tileHeight,
-    resourceNodes: parseResourceObjects(tilemap),
+    resourceNodes,
     propSprites,
     propBlockers,
     animatedTileGroups:

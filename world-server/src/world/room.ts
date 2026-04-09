@@ -2,6 +2,7 @@ import { WebSocket } from "ws";
 import type {
   CharacterClassId,
   DerivedCharacterStats,
+  EquipmentLoadout,
   RuneId,
 } from "@myth-of-rune/shared";
 
@@ -19,6 +20,7 @@ export interface ConnectedPlayer {
   level: number;
   experience: number;
   equippedRunes: Array<RuneId | null>;
+  equipment: EquipmentLoadout;
   stats: DerivedCharacterStats;
   socket: WebSocket;
 }

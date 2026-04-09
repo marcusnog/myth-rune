@@ -3,6 +3,10 @@ import {
   defaultStarterRunesForClass,
   isRuneUnlocked,
   type CharacterClassId,
+  DEFAULT_EQUIPMENT,
+  isEquippableItem,
+  slotForItem,
+  type EquipmentLoadout,
   type ProgressionSnapshot,
   type RuneId,
 } from "@myth-of-rune/shared";
@@ -10,6 +14,7 @@ import {
 export interface PlayerProgressionState {
   experience: number;
   equippedRunes: Array<RuneId | null>;
+  equipment: EquipmentLoadout;
 }
 
 export function createInitialProgression(
@@ -18,6 +23,7 @@ export function createInitialProgression(
   return {
     experience: 0,
     equippedRunes: defaultStarterRunesForClass(characterClass),
+    equipment: { ...DEFAULT_EQUIPMENT },
   };
 }
 
@@ -30,6 +36,7 @@ export function snapshotPlayerProgression(
     characterClass,
     state.experience,
     state.equippedRunes,
+    state.equipment,
     currentHealth,
   );
 }
@@ -90,6 +97,43 @@ export function equipRune(
   return {
     ok: true,
     message: "Runa equipada.",
+    snapshot: snapshotPlayerProgression(characterClass, state),
+  };
+}
+
+export function equipItem(
+  characterClass: CharacterClassId,
+  state: PlayerProgressionState,
+  slot: "weapon" | "armour",
+  itemId: string | null,
+): { ok: boolean; message: string; snapshot: ProgressionSnapshot } {
+  if (itemId === null) {
+    state.equipment = { ...state.equipment, [slot]: null };
+    return {
+      ok: true,
+      message: "Item removido.",
+      snapshot: snapshotPlayerProgression(characterClass, state),
+    };
+  }
+  if (!isEquippableItem(itemId)) {
+    return {
+      ok: false,
+      message: "Esse item nao pode ser equipado.",
+      snapshot: snapshotPlayerProgression(characterClass, state),
+    };
+  }
+  const expectedSlot = slotForItem(itemId);
+  if (expectedSlot !== slot) {
+    return {
+      ok: false,
+      message: "Slot invalido para este item.",
+      snapshot: snapshotPlayerProgression(characterClass, state),
+    };
+  }
+  state.equipment = { ...state.equipment, [slot]: itemId };
+  return {
+    ok: true,
+    message: "Item equipado.",
     snapshot: snapshotPlayerProgression(characterClass, state),
   };
 }

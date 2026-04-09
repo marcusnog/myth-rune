@@ -2,6 +2,7 @@ import { z } from "zod";
 import { CharacterClass } from "../character.js";
 import { WORLD_COMBAT_REJECT_CODES } from "../combatRules.js";
 import { RUNE_IDS, RUNE_SLOT_COUNT } from "../runes.js";
+import { DEFAULT_EQUIPMENT } from "../equipment.js";
 import { positionSchema } from "./common.js";
 
 const characterClassInWorldSchema = z.enum([
@@ -45,6 +46,13 @@ export const worldClientMessageSchema = z.discriminatedUnion("type", [
     }),
   }),
   z.object({
+    type: z.literal("equip_item"),
+    payload: z.object({
+      slot: z.enum(["weapon", "armour"]),
+      itemId: z.string().min(1).nullable(),
+    }),
+  }),
+  z.object({
     type: z.literal("respawn"),
     payload: z.object({}),
   }),
@@ -58,6 +66,12 @@ export const worldClientMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("inventory_sync"),
     payload: z.object({
       inventory: z.record(z.string(), z.number().int().nonnegative()),
+    }),
+  }),
+  z.object({
+    type: z.literal("pickup_loot"),
+    payload: z.object({
+      dropId: z.string().uuid(),
     }),
   }),
 ]);
@@ -85,6 +99,16 @@ export const mobStateSchema = z.object({
 });
 
 export type MobType = z.infer<typeof mobTypeSchema>;
+
+export const lootDropSchema = z.object({
+  dropId: z.string().uuid(),
+  itemId: z.string().min(1),
+  amount: z.number().int().positive(),
+  x: z.number(),
+  y: z.number(),
+});
+
+export type LootDrop = z.infer<typeof lootDropSchema>;
 
 export const runeIdSchema = z.enum(RUNE_IDS);
 
@@ -120,6 +144,12 @@ export const progressionSnapshotSchema = z.object({
   experienceForNextLevel: z.number().int().nonnegative(),
   levelProgress: z.number().min(0).max(1),
   equippedRunes: z.array(runeIdSchema.nullable()).length(RUNE_SLOT_COUNT),
+  equipment: z
+    .object({
+      weapon: z.string().min(1).nullable(),
+      armour: z.string().min(1).nullable(),
+    })
+    .default(DEFAULT_EQUIPMENT),
   availableRunes: z.array(progressionRuneSchema),
   stats: derivedStatsSchema,
 });
@@ -148,7 +178,14 @@ export const worldServerMessageSchema = z.discriminatedUnion("type", [
       combatConfig: worldCombatConfigSchema,
       players: z.array(playerStateSchema),
       mobs: z.array(mobStateSchema).default([]),
+      loot: z.array(lootDropSchema).default([]),
       inventory: z.record(z.string(), z.number().int().nonnegative()).default({}),
+    }),
+  }),
+  z.object({
+    type: z.literal("inventory"),
+    payload: z.object({
+      inventory: z.record(z.string(), z.number().int().nonnegative()),
     }),
   }),
   z.object({
@@ -156,6 +193,7 @@ export const worldServerMessageSchema = z.discriminatedUnion("type", [
     payload: z.object({
       players: z.array(playerStateSchema),
       mobs: z.array(mobStateSchema).default([]),
+      loot: z.array(lootDropSchema).default([]),
     }),
   }),
   z.object({

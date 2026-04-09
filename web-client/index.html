@@ -735,6 +735,67 @@
         margin-bottom: 8px;
       }
 
+      .bag-tabs {
+        display: inline-flex;
+        gap: 6px;
+      }
+
+      .bag-tab {
+        border: 1px solid #5e3d1e;
+        border-radius: 6px;
+        background: linear-gradient(180deg, #5b3620, #2c1a0f);
+        color: #d8b57e;
+        font-family: "Cinzel", serif;
+        font-size: 12px;
+        padding: 5px 10px;
+        cursor: pointer;
+      }
+
+      .bag-tab.is-active {
+        color: #ffe3af;
+        box-shadow: inset 0 0 0 1px #ab7c3a;
+      }
+
+      .bag-view {
+        display: none;
+      }
+
+      .bag-view.is-active {
+        display: block;
+      }
+
+      .equipment-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .equipment-slot {
+        border: 1px solid #6a4424;
+        border-radius: 8px;
+        background: linear-gradient(180deg, #24150d, #140b06);
+        padding: 10px;
+        display: grid;
+        gap: 6px;
+      }
+
+      .equipment-slot-title {
+        font-family: "Cinzel", serif;
+        font-size: 13px;
+        color: #ffdc9d;
+      }
+
+      .equipment-slot-value {
+        font-size: 11px;
+        color: #e8d2ae;
+      }
+
+      .equipment-hint {
+        margin-top: 10px;
+        font-size: 10px;
+        color: #cbb58d;
+      }
+
       .bag-summary {
         font-size: 10px;
         color: #efd5a4;
@@ -1539,8 +1600,8 @@
             <div class="auth-card-body">
               <form id="login-form" novalidate>
                 <div class="auth-field">
-                  <label for="login-email">Email</label>
-                  <input id="login-email" type="email" value="demo@mythrune.local" required />
+                  <label for="login-identifier">Email ou nick</label>
+                  <input id="login-identifier" type="text" autocomplete="username" value="demo@mythrune.local" required />
                 </div>
                 <div class="auth-field">
                   <label for="login-password">Password</label>
@@ -1694,12 +1755,42 @@
 
           <section id="panel-bag" class="panel-view">
             <div class="bag-toolbar">
-              <div id="inventory-summary" class="bag-summary">Bolsa vazia</div>
+              <div class="bag-tabs" role="tablist" aria-label="Inventário">
+                <button id="bag-tab-items" class="bag-tab is-active" type="button" role="tab">
+                  Itens
+                </button>
+                <button id="bag-tab-equipment" class="bag-tab" type="button" role="tab">
+                  Equipamento
+                </button>
+              </div>
               <button id="crafting-open" class="menu-btn icon-btn" type="button" aria-label="Crafting">
                 <span class="craft-icon" aria-hidden="true"></span>
               </button>
             </div>
-            <div id="inventory-grid" class="bag-grid" aria-live="polite"></div>
+            <div id="inventory-summary" class="bag-summary" style="margin-bottom: 8px">Bolsa vazia</div>
+
+            <div id="bag-view-items" class="bag-view is-active" role="tabpanel">
+              <div id="inventory-grid" class="bag-grid" aria-live="polite"></div>
+            </div>
+
+            <div id="bag-view-equipment" class="bag-view" role="tabpanel">
+              <div class="equipment-grid">
+                <div class="equipment-slot">
+                  <div class="equipment-slot-title">Arma</div>
+                  <div id="equipment-weapon" class="equipment-slot-value">Nenhuma equipada</div>
+                  <button id="equipment-weapon-clear" class="menu-btn" type="button">Remover</button>
+                </div>
+                <div class="equipment-slot">
+                  <div class="equipment-slot-title">Armadura</div>
+                  <div id="equipment-armour" class="equipment-slot-value">Nenhuma equipada</div>
+                  <button id="equipment-armour-clear" class="menu-btn" type="button">Remover</button>
+                </div>
+              </div>
+              <div id="equipment-list" class="rune-list" style="margin-top: 10px"></div>
+              <div class="equipment-hint">
+                Dica: em breve você poderá equipar itens do inventário e sincronizar com o servidor.
+              </div>
+            </div>
           </section>
         </aside>
 

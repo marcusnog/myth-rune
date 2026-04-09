@@ -15,6 +15,20 @@ export class InventoryStore {
     };
   }
 
+  /**
+   * Substitui o inventário local pelo estado do servidor (mesma instância — mantém CraftingSystem e outros sistemas sincronizados).
+   */
+  public setFromServer(record: Record<string, number>): void {
+    this.counts.clear();
+    for (const itemId of ITEM_SORT_ORDER) {
+      const raw = record[itemId];
+      if (typeof raw === "number" && raw > 0) {
+        this.counts.set(itemId, raw);
+      }
+    }
+    this.emit();
+  }
+
   public add(itemId: ItemId, amount: number): void {
     if (amount <= 0) {
       return;

@@ -49,6 +49,30 @@ import {
 } from "./systems/rendering/entityRenderer";
 import { WeatherSystem, type WeatherType } from "./systems/weather/weatherSystem";
 
+type LootDropPayload = Extract<
+  WorldServerMessage,
+  { type: "welcome" | "state" }
+>["payload"] extends infer P
+  ? P extends { loot: infer L }
+    ? L extends ReadonlyArray<infer Entry>
+      ? Entry
+      : never
+    : never
+  : never;
+
+interface LootDropEntity {
+  dropId: string;
+  itemId: string;
+  amount: number;
+  x: number;
+  y: number;
+  marker: Phaser.GameObjects.Container;
+  /** Ícone + anel: animação manual (evita shimmer com roundPixels/zoom). */
+  floater: Phaser.GameObjects.Container;
+  floatPhase: number;
+  label: Phaser.GameObjects.Text;
+}
+
 interface HudBindings {
   setStatus: (text: string) => void;
   setHp: (current: number, max: number) => void;
@@ -107,6 +131,27 @@ const COLOR_DAMAGE_ENEMY = "#ffdf5f";
 const COLOR_DAMAGE_PLAYER = "#ff7b7b";
 const COLOR_REJECT = "#ffad84";
 
+const ICON_TEXTURE_PREFIX = "itemIcon:";
+function iconTextureKey(src: string): string {
+  return `${ICON_TEXTURE_PREFIX}${src}`;
+}
+
+function frameIndexForIcon(
+  textureWidth: number,
+  iconSize: number,
+  col: number,
+  row: number,
+): number {
+  const cols = Math.max(1, Math.floor(textureWidth / iconSize));
+  return row * cols + col;
+}
+
+/** Evita micro-jitter do servidor e não briga com tweens no mesmo GameObject. */
+const LOOT_POS_EPS = 0.4;
+
+const LOOT_FLOAT_SPEED = 2.05;
+const LOOT_FLOAT_AMP = 3;
+
 export class WorldScene extends Phaser.Scene {
   public static readonly SCENE_KEY = "WorldScene";
 
@@ -145,6 +190,7 @@ export class WorldScene extends Phaser.Scene {
   private authoritativeLocalY = 0;
   private focusedNpcId: string | null = null;
   private dialogueState: DialogueState | null = null;
+  private readonly lootDrops = new Map<string, LootDropEntity>();
   private inventory!: InventoryStore;
   private craftingSystem!: CraftingSystem;
   private gatheringSystem: GatheringSystem | null = null;
@@ -178,6 +224,19 @@ export class WorldScene extends Phaser.Scene {
       this.load.spritesheet(spec.textureKey, spec.path, {
         frameWidth: spec.frameWidth,
         frameHeight: spec.frameHeight,
+      });
+    }
+    const iconSheets = new Map<string, number>();
+    for (const def of Object.values(ITEM_DEFINITIONS)) {
+      if (!def?.icon?.src) continue;
+      if (!iconSheets.has(def.icon.src)) {
+        iconSheets.set(def.icon.src, def.icon.size);
+      }
+    }
+    for (const [src, size] of iconSheets.entries()) {
+      this.load.spritesheet(iconTextureKey(src), `/sprites/icons/${src}`, {
+        frameWidth: size,
+        frameHeight: size,
       });
     }
     for (const npc of STARTER_VILLAGE_NPCS) {
@@ -266,6 +325,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   public update(time: number, deltaMs: number): void {
+    this.updateLootFloatAnimation(time);
+
     if (!this.entityRenderer.local) {
       return;
     }
@@ -365,6 +426,10 @@ export class WorldScene extends Phaser.Scene {
         this.openDialogue(target.npc);
         return;
       }
+      if (target?.kind === "loot") {
+        this.tryPickupLoot(target.dropId);
+        return;
+      }
     }
 
     const velocity = this.handleLocalMovement(deltaMs / 1000);
@@ -412,6 +477,17 @@ export class WorldScene extends Phaser.Scene {
     const msg: WorldClientMessage = {
       type: "equip_rune",
       payload: { slotIndex, runeId },
+    };
+    this.ws.send(JSON.stringify(msg));
+  }
+
+  public equipItemFromHud(slot: "weapon" | "armour", itemId: string | null): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    const msg: WorldClientMessage = {
+      type: "equip_item",
+      payload: { slot, itemId },
     };
     this.ws.send(JSON.stringify(msg));
   }
@@ -702,6 +778,8 @@ export class WorldScene extends Phaser.Scene {
     this.initData.hud.setInteractionPrompt(
       target.kind === "resource"
         ? `${target.node.getPromptText()}`
+        : target.kind === "loot"
+          ? `Coletar ${target.itemLabel}`
         : `Falar com ${target.npc.spec.name}`,
     );
   }
@@ -734,6 +812,7 @@ export class WorldScene extends Phaser.Scene {
   private getPrimaryInteractable():
     | { kind: "resource"; node: ResourceNodeEntity; distance: number }
     | { kind: "npc"; npc: StaticNpcEntity; distance: number }
+    | { kind: "loot"; dropId: string; distance: number; itemLabel: string }
     | null {
     if (!this.entityRenderer.local) {
       return null;
@@ -756,13 +835,176 @@ export class WorldScene extends Phaser.Scene {
         )
       : Number.POSITIVE_INFINITY;
 
-    if (resource && resourceDistance <= npcDistance) {
+    const loot = this.findNearestLootDrop();
+    const lootDistance = loot?.distance ?? Number.POSITIVE_INFINITY;
+
+    if (resource && resourceDistance <= npcDistance && resourceDistance <= lootDistance) {
       return { kind: "resource", node: resource, distance: resourceDistance };
     }
-    if (npc) {
+    if (loot && lootDistance <= npcDistance) {
+      return {
+        kind: "loot",
+        dropId: loot.drop.dropId,
+        distance: lootDistance,
+        itemLabel: loot.label,
+      };
+    }
+    if (npc && npcDistance < lootDistance) {
       return { kind: "npc", npc, distance: npcDistance };
     }
     return null;
+  }
+
+  /** Flutuação só com offset inteiro em Y (sem tween de escala/alpha — evita piscar). */
+  private updateLootFloatAnimation(timeMs: number): void {
+    const t = timeMs / 1000;
+    for (const drop of this.lootDrops.values()) {
+      const yOff = Math.round(
+        Math.sin(t * LOOT_FLOAT_SPEED + drop.floatPhase) * LOOT_FLOAT_AMP,
+      );
+      drop.floater.setY(yOff);
+    }
+  }
+
+  private findNearestLootDrop(): { drop: LootDropEntity; distance: number; label: string } | null {
+    if (!this.entityRenderer.local || this.lootDrops.size === 0) return null;
+    const lx = this.entityRenderer.local.sprite.x;
+    const ly = this.entityRenderer.local.sprite.y;
+    let best: LootDropEntity | null = null;
+    let bestDist = Number.POSITIVE_INFINITY;
+    for (const drop of this.lootDrops.values()) {
+      const d = Phaser.Math.Distance.Between(lx, ly, drop.x, drop.y);
+      if (d < bestDist) {
+        bestDist = d;
+        best = drop;
+      }
+    }
+    if (!best) return null;
+    const definition = (ITEM_DEFINITIONS as Record<string, { name?: string }>)[best.itemId];
+    const name = definition?.name ?? best.itemId;
+    return { drop: best, distance: bestDist, label: `${name} x${best.amount}` };
+  }
+
+  private syncLoot(entries: ReadonlyArray<LootDropPayload>): void {
+    const seen = new Set<string>();
+    for (const entry of entries) {
+      const e = entry as any;
+      const dropId = e.dropId as string;
+      seen.add(dropId);
+      const existing = this.lootDrops.get(dropId);
+      if (existing) {
+        const nx = e.x as number;
+        const ny = e.y as number;
+        const nAmount = e.amount as number;
+        if (
+          Math.abs(nx - existing.x) > LOOT_POS_EPS ||
+          Math.abs(ny - existing.y) > LOOT_POS_EPS
+        ) {
+          existing.x = nx;
+          existing.y = ny;
+          existing.marker.setPosition(Math.round(nx), Math.round(ny));
+          existing.marker.setDepth(ny - this.worldMinY + 2);
+        }
+        if (nAmount !== existing.amount) {
+          existing.amount = nAmount;
+          existing.label.setText(String(nAmount));
+        }
+        continue;
+      }
+
+      const x = e.x as number;
+      const y = e.y as number;
+      const itemId = e.itemId as string;
+      const amount = e.amount as number;
+
+      const rx = Math.round(x);
+      const ry = Math.round(y);
+      const floatPhase = Math.random() * Math.PI * 2;
+
+      // Root = posição do servidor. Filho = ícone + anel de loot (tweens só aqui; não conflita com setPosition).
+      const marker = this.add.container(rx, ry);
+      marker.setDepth(ry - this.worldMinY + 2);
+
+      const floater = this.add.container(0, 0);
+      marker.add(floater);
+
+      const lootRing = this.add.graphics();
+      lootRing.lineStyle(2, 0xffc966, 0.55);
+      lootRing.strokeCircle(0, 0, 20);
+      lootRing.lineStyle(1, 0x8b5a14, 0.4);
+      lootRing.strokeCircle(0, 0, 26);
+      floater.add(lootRing);
+
+      const definition = (ITEM_DEFINITIONS as Record<string, any>)[itemId];
+      const icon = definition?.icon as
+        | { src: string; col: number; row: number; size: number }
+        | undefined;
+
+      let usedRealIcon = false;
+      if (icon) {
+        const key = iconTextureKey(icon.src);
+        if (this.textures.exists(key)) {
+          const tex = this.textures.get(key);
+          const textureWidth =
+            tex.source?.[0]?.width ??
+            (tex.getSourceImage() as HTMLImageElement | undefined)?.width ??
+            0;
+          const frame = frameIndexForIcon(textureWidth, icon.size, icon.col, icon.row);
+          const sprite = this.add.sprite(0, 0, key, frame);
+          sprite.setOrigin(0.5, 0.5);
+          sprite.setScale(2);
+          floater.add(sprite);
+          usedRealIcon = true;
+        }
+      }
+
+      if (!usedRealIcon) {
+        const gfx = this.add.graphics();
+        const accent = (definition?.accent as string | undefined) ?? "#ffe480";
+        const color = Phaser.Display.Color.HexStringToColor(accent).color;
+        gfx.fillStyle(color, 0.95);
+        gfx.beginPath();
+        gfx.moveTo(0, -6);
+        gfx.lineTo(6, 0);
+        gfx.lineTo(0, 6);
+        gfx.lineTo(-6, 0);
+        gfx.closePath();
+        gfx.fillPath();
+        gfx.lineStyle(1, 0x120707, 0.8);
+        gfx.strokePath();
+        floater.add(gfx);
+      }
+
+      const label = this.add
+        .text(0, -16, String(amount), {
+          fontFamily: "IBM Plex Mono",
+          fontSize: "10px",
+          color: "#ffe9c7",
+          stroke: "#140908",
+          strokeThickness: 3,
+        })
+        .setOrigin(0.5);
+      marker.add(label);
+      label.setDepth(4);
+
+      this.lootDrops.set(dropId, {
+        dropId,
+        itemId,
+        amount,
+        x,
+        y,
+        marker,
+        floater,
+        floatPhase,
+        label,
+      });
+    }
+
+    for (const [id, drop] of this.lootDrops.entries()) {
+      if (seen.has(id)) continue;
+      drop.marker.destroy(true);
+      this.lootDrops.delete(id);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -883,15 +1125,22 @@ export class WorldScene extends Phaser.Scene {
         this.applyProgressionSnapshot(msg.payload.progression, false);
         this.syncPlayers(msg.payload.players);
         this.syncMobs(msg.payload.mobs);
-        for (const [itemId, count] of Object.entries(msg.payload.inventory)) {
-          if (count > 0) this.inventory.add(itemId as ItemId, count);
-        }
+        this.syncLoot(msg.payload.loot ?? []);
+        this.inventory.setFromServer(msg.payload.inventory ?? {});
         this.initData.hud.setStatus("No mundo");
+        return;
+      }
+      case "inventory": {
+        // Nunca trocar a instância de InventoryStore: CraftingSystem mantém referência ao store criado no create().
+        this.inventory.setFromServer(msg.payload.inventory);
+        this.syncInventoryHud();
+        this.syncCraftingHud();
         return;
       }
       case "state": {
         this.syncPlayers(msg.payload.players);
         this.syncMobs(msg.payload.mobs);
+        this.syncLoot(msg.payload.loot ?? []);
         return;
       }
       case "progression": {
@@ -1387,6 +1636,17 @@ export class WorldScene extends Phaser.Scene {
     const msg: WorldClientMessage = {
       type: "inventory_sync",
       payload: { inventory: inv },
+    };
+    this.ws.send(JSON.stringify(msg));
+  }
+
+  private tryPickupLoot(dropId: string): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    const msg: WorldClientMessage = {
+      type: "pickup_loot",
+      payload: { dropId },
     };
     this.ws.send(JSON.stringify(msg));
   }

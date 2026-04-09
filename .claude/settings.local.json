@@ -48,7 +48,8 @@
       "Bash(node -e \"const {PNG}=require\\('pngjs'\\);const fs=require\\('fs'\\);const p=PNG.sync.read\\(fs.readFileSync\\('c:/Users/NITRO V/Documents/myth-rune/web-client/public/sprites/mobs/goblin/goblin_sprite_sheet.png'\\)\\);console.log\\(p.width,p.height\\)\")",
       "Bash(node -e \"const p=require\\('phaser'\\);console.log\\('ok'\\)\")",
       "Bash(xargs grep:*)",
-      "Bash(node gen_ent_sprite.js)"
+      "Bash(node gen_ent_sprite.js)",
+      "Bash(xargs -I{} basename {})"
     ]
   }
 }

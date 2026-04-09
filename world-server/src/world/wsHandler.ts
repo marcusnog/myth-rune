@@ -2,6 +2,8 @@ import type { IncomingMessage } from "node:http";
 import type { WebSocket } from "ws";
 import {
   GATHER_XP,
+  DEFAULT_EQUIPMENT,
+  type EquipmentLoadout,
   type GatherResourceType,
   type RuneId,
   WORLD_COMBAT_CONFIG,
@@ -19,6 +21,7 @@ import * as mobs from "./mobs.js";
 import * as progression from "./progression.js";
 import type { ConnectedPlayer } from "./room.js";
 import * as room from "./room.js";
+import * as loot from "./loot.js";
 
 const POSITION_PERSIST_INTERVAL_MS = 250;
 
@@ -101,6 +104,7 @@ function broadcastState(): void {
     payload: {
       players: room.snapshotForClient(),
       mobs: mobs.snapshotMobsForClient(),
+      loot: loot.snapshotLootForClient(),
     },
   });
 }
@@ -114,12 +118,13 @@ function applyXpGrant(
 ): void {
   const result = progression.grantExperience(
     self.characterClass,
-    { experience: self.experience, equippedRunes: self.equippedRunes },
+    { experience: self.experience, equippedRunes: self.equippedRunes, equipment: self.equipment },
     xpAmount,
   );
   self.experience = result.snapshot.experience;
   self.level = result.snapshot.level;
   self.equippedRunes = [...result.snapshot.equippedRunes];
+  self.equipment = result.snapshot.equipment;
   self.stats = result.snapshot.stats;
 
   if (result.levelChanged) {
@@ -131,7 +136,7 @@ function applyXpGrant(
 
   const snapshot = progression.snapshotPlayerProgression(
     self.characterClass,
-    { experience: self.experience, equippedRunes: self.equippedRunes },
+    { experience: self.experience, equippedRunes: self.equippedRunes, equipment: self.equipment },
     self.health,
   );
   sendJson(ws, { type: "progression", payload: snapshot });
@@ -153,7 +158,7 @@ function handleEquipRune(
 ): void {
   const result = progression.equipRune(
     self.characterClass,
-    { experience: self.experience, equippedRunes: self.equippedRunes },
+    { experience: self.experience, equippedRunes: self.equippedRunes, equipment: self.equipment },
     payload.slotIndex,
     payload.runeId,
   );
@@ -174,10 +179,51 @@ function handleEquipRune(
 
   const snapshot = progression.snapshotPlayerProgression(
     self.characterClass,
-    { experience: self.experience, equippedRunes: self.equippedRunes },
+    { experience: self.experience, equippedRunes: self.equippedRunes, equipment: self.equipment },
     self.health,
   );
   sendJson(ws, { type: "progression", payload: snapshot });
+  broadcastState();
+}
+
+function handleEquipItem(
+  ws: WebSocket,
+  pool: pg.Pool,
+  self: ConnectedPlayer,
+  payload: { slot: "weapon" | "armour"; itemId: string | null },
+): void {
+  const result = progression.equipItem(
+    self.characterClass,
+    { experience: self.experience, equippedRunes: self.equippedRunes, equipment: self.equipment },
+    payload.slot,
+    payload.itemId,
+  );
+  if (!result.ok) {
+    sendError(ws, "EQUIP", result.message);
+    return;
+  }
+
+  self.equipment = result.snapshot.equipment;
+  self.stats = result.snapshot.stats;
+  const previousHealth = self.health;
+  self.health = Math.min(self.health, self.stats.maxHealth);
+  if (self.health !== previousHealth) {
+    void persistPlayerHealth(pool, self.characterId, self.health).catch(() => undefined);
+  }
+
+  // Persist equipment in DB
+  void pool
+    .connect()
+    .then(async (db) => {
+      try {
+        await characterRepository.updateEquipment(db, self.characterId, self.equipment as any);
+      } finally {
+        db.release();
+      }
+    })
+    .catch(() => undefined);
+
+  sendJson(ws, { type: "progression", payload: result.snapshot });
   broadcastState();
 }
 
@@ -199,7 +245,7 @@ function handleRespawn(
 
   const snapshot = progression.snapshotPlayerProgression(
     self.characterClass,
-    { experience: self.experience, equippedRunes: self.equippedRunes },
+    { experience: self.experience, equippedRunes: self.equippedRunes, equipment: self.equipment },
     self.health,
   );
   sendJson(ws, {
@@ -236,8 +282,48 @@ function handleAttack(
     applyXpGrant(ws, pool, self, result.experienceAwarded);
   }
   if (result.mobDied) {
+    if (result.diedAt) {
+      loot.spawnLootForMobDeath(
+        result.diedAt.mobType,
+        result.diedAt.x,
+        result.diedAt.y,
+        Date.now(),
+      );
+    }
     broadcastState();
   }
+}
+
+function handlePickupLoot(
+  ws: WebSocket,
+  pool: pg.Pool,
+  self: ConnectedPlayer,
+  payload: { dropId: string },
+): void {
+  // Inventory is persisted as a JSONB blob; keep server authority on pickup.
+  void pool
+    .connect()
+    .then(async (db) => {
+      try {
+        const row = await characterRepository.getCharacterById(db, self.characterId);
+        if (!row) {
+          sendError(ws, "NOT_FOUND", "Character not found");
+          return;
+        }
+        const inv = row.inventory ?? {};
+        const pickup = loot.tryPickupLoot(self, payload.dropId, inv, Date.now());
+        if (!pickup.ok) {
+          sendError(ws, pickup.code, pickup.message);
+          return;
+        }
+        await characterRepository.updateInventory(db, self.characterId, inv);
+        sendJson(ws, { type: "inventory", payload: { inventory: inv } });
+        broadcastState();
+      } finally {
+        db.release();
+      }
+    })
+    .catch(() => undefined);
 }
 
 function handleGatherComplete(
@@ -341,6 +427,8 @@ export function attachWorldHandlers(
     }
 
     const initialProgression = progression.createInitialProgression(row.character_class);
+    initialProgression.equipment =
+      (row.equipment as unknown as EquipmentLoadout) ?? { ...DEFAULT_EQUIPMENT };
     const initialStatsSnapshot = progression.snapshotPlayerProgression(
       row.character_class,
       initialProgression,
@@ -386,6 +474,7 @@ export function attachWorldHandlers(
       level: initialSnapshot.level,
       experience: initialProgression.experience,
       equippedRunes: [...initialProgression.equippedRunes],
+      equipment: initialProgression.equipment,
       stats: initialSnapshot.stats,
       socket: ws,
     });
@@ -404,6 +493,7 @@ export function attachWorldHandlers(
         combatConfig: WORLD_COMBAT_CONFIG,
         players: room.snapshotForClient(),
         mobs: mobs.snapshotMobsForClient(),
+        loot: loot.snapshotLootForClient(),
         inventory: row.inventory ?? {},
       },
     });
@@ -422,6 +512,9 @@ export function attachWorldHandlers(
         case "equip_rune":
           handleEquipRune(ws, pool, self, msg.payload);
           return;
+        case "equip_item":
+          handleEquipItem(ws, pool, self, msg.payload);
+          return;
         case "respawn":
           handleRespawn(ws, pool, redis, self);
           return;
@@ -433,6 +526,9 @@ export function attachWorldHandlers(
           return;
         case "inventory_sync":
           handleInventorySync(pool, self, msg.payload);
+          return;
+        case "pickup_loot":
+          handlePickupLoot(ws, pool, self, msg.payload);
           return;
         case "move":
           handleMove(pool, redis, characterId, self, msg.payload);

@@ -4,6 +4,7 @@ import type { WebSocket } from "ws";
 import {
   buildProgressionSnapshot,
   defaultStarterRunesForClass,
+  DEFAULT_EQUIPMENT,
   WORLD_COMBAT_CONFIG,
 } from "@myth-of-rune/shared";
 import {
@@ -37,6 +38,7 @@ function makePlayer(
     characterClass,
     0,
     defaultStarterRunesForClass(characterClass),
+    DEFAULT_EQUIPMENT,
   );
   return {
     characterId,
@@ -52,6 +54,7 @@ function makePlayer(
     level: progression.level,
     experience: progression.experience,
     equippedRunes: [...progression.equippedRunes],
+    equipment: progression.equipment,
     stats: progression.stats,
     socket: makeFakeSocket(),
   };

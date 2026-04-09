@@ -46,6 +46,7 @@ export type PlayerAttackResult =
       event: CombatEventPayload;
       mobDied: boolean;
       experienceAwarded: number;
+      diedAt?: { x: number; y: number; mobType: MobType };
     }
   | {
       ok: false;
@@ -254,8 +255,9 @@ export function applyPlayerAttack(
 
   if (mob.hp <= 0) {
     const experienceAwarded = MOB_EXPERIENCE_REWARD[mob.type];
+    const diedAt = { x: mob.x, y: mob.y, mobType: mob.type };
     store.delete(mob.id);
-    return { ok: true, event, mobDied: true, experienceAwarded };
+    return { ok: true, event, mobDied: true, experienceAwarded, diedAt };
   }
   return { ok: true, event, mobDied: false, experienceAwarded: 0 };
 }

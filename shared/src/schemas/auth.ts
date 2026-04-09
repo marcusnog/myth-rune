@@ -17,8 +17,9 @@ export const registerBodySchema = z.object({
 
 export type RegisterBody = z.infer<typeof registerBodySchema>;
 
+/** Email ou nome do personagem (nick). */
 export const loginBodySchema = z.object({
-  email: z.string().email().max(320),
+  login: z.string().trim().min(1).max(320),
   password: z.string().min(1).max(128),
 });
 

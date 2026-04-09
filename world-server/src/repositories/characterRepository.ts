@@ -10,6 +10,7 @@ export interface CharacterRow {
   y: number;
   health: number;
   inventory: Record<string, number>;
+  equipment: Record<string, string | null>;
 }
 
 export async function getCharacterById(
@@ -17,7 +18,7 @@ export async function getCharacterById(
   id: string,
 ): Promise<CharacterRow | null> {
   const r = await client.query<CharacterRow>(
-    `SELECT id, name, character_class, map_id, x, y, health, inventory
+    `SELECT id, name, character_class, map_id, x, y, health, inventory, equipment
      FROM characters WHERE id = $1`,
     [id],
   );
@@ -33,6 +34,17 @@ export async function updateInventory(
     `UPDATE characters SET inventory = $2 WHERE id = $1`,
     [characterId, JSON.stringify(inventory)],
   );
+}
+
+export async function updateEquipment(
+  client: pg.PoolClient,
+  characterId: string,
+  equipment: Record<string, string | null>,
+): Promise<void> {
+  await client.query(`UPDATE characters SET equipment = $2 WHERE id = $1`, [
+    characterId,
+    JSON.stringify(equipment),
+  ]);
 }
 
 export async function updatePosition(

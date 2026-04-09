@@ -1,6 +1,7 @@
 export * from "./character.js";
 export * from "./combatRules.js";
 export * from "./runes.js";
+export * from "./equipment.js";
 export * from "./progression.js";
 export * from "./schemas/common.js";
 export * from "./schemas/auth.js";

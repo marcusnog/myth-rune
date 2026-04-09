@@ -10,6 +10,11 @@ import {
   type RuneId,
   type RuneStatBonus,
 } from "./runes.js";
+import {
+  DEFAULT_EQUIPMENT,
+  equipmentBonusesForLoadout,
+  type EquipmentLoadout,
+} from "./equipment.js";
 
 export interface DerivedCharacterStats {
   maxHealth: number;
@@ -32,6 +37,7 @@ export interface ProgressionSnapshot {
   experienceForNextLevel: number;
   levelProgress: number;
   equippedRunes: ReadonlyArray<RuneId | null>;
+  equipment: EquipmentLoadout;
   availableRunes: ReadonlyArray<ProgressionRuneView>;
   stats: DerivedCharacterStats;
 }
@@ -91,16 +97,20 @@ export function derivedStatsForCharacter(
   characterClass: CharacterClassId,
   level: number,
   equippedRunes: ReadonlyArray<RuneId | null>,
+  equipment: EquipmentLoadout = DEFAULT_EQUIPMENT,
 ): DerivedCharacterStats {
   const base = baseStatsForClass(characterClass);
   const bonus = sumRuneBonuses(equippedRunes);
+  const equipBonus = equipmentBonusesForLoadout(equipment);
   const levelDelta = Math.max(0, level - 1);
-  const moveSpeed = base.moveSpeed + levelDelta * 0.04 + bonus.moveSpeed;
+  const moveSpeed =
+    base.moveSpeed + levelDelta * 0.04 + bonus.moveSpeed + equipBonus.moveSpeed;
 
   return {
-    maxHealth: base.maxHealth + levelDelta * 8 + bonus.maxHealth,
-    attack: base.attack + levelDelta * 2 + bonus.attack,
-    defense: base.defense + Math.floor(levelDelta * 1.2) + bonus.defense,
+    maxHealth: base.maxHealth + levelDelta * 8 + bonus.maxHealth + equipBonus.maxHealth,
+    attack: base.attack + levelDelta * 2 + bonus.attack + equipBonus.attack,
+    defense:
+      base.defense + Math.floor(levelDelta * 1.2) + bonus.defense + equipBonus.defense,
     moveSpeed,
     worldMoveSpeed: moveSpeedToWorldUnits(moveSpeed),
   };
@@ -110,6 +120,7 @@ export function buildProgressionSnapshot(
   characterClass: CharacterClassId,
   experience: number,
   equippedRunes: ReadonlyArray<RuneId | null>,
+  equipment: EquipmentLoadout = DEFAULT_EQUIPMENT,
   currentHealth?: number,
 ): ProgressionSnapshot {
   const safeExperience = Math.max(0, Math.floor(experience));
@@ -120,7 +131,7 @@ export function buildProgressionSnapshot(
   const experienceIntoLevel = Math.max(0, safeExperience - currentLevelBaseXp);
   const progress =
     nextLevelRequirement > 0 ? experienceIntoLevel / nextLevelRequirement : 1;
-  const stats = derivedStatsForCharacter(characterClass, level, equippedRunes);
+  const stats = derivedStatsForCharacter(characterClass, level, equippedRunes, equipment);
 
   return {
     level,
@@ -130,6 +141,10 @@ export function buildProgressionSnapshot(
     experienceForNextLevel: nextLevelRequirement,
     levelProgress: Math.min(1, Math.max(0, progress)),
     equippedRunes: [...equippedRunes],
+    equipment: {
+      weapon: equipment.weapon ?? null,
+      armour: equipment.armour ?? null,
+    },
     availableRunes: RUNE_IDS.map((runeId) => ({
       ...RUNE_DEFINITIONS[runeId],
       unlocked: level >= RUNE_DEFINITIONS[runeId].unlockLevel,

@@ -1,6 +1,8 @@
 import Phaser from "phaser";
 import {
   authResponseSchema,
+  EQUIPPABLE_ITEMS,
+  slotForItem,
   type ProgressionSnapshot,
   type RuneId,
 } from "@myth-of-rune/shared";
@@ -62,7 +64,7 @@ const VALID_CLASSES = new Set<CharacterClassValue>([
 
 const appRoot = requireElement<HTMLDivElement>("app");
 const loginForm = requireElement<HTMLFormElement>("login-form");
-const loginEmailInput = requireElement<HTMLInputElement>("login-email");
+const loginIdentifierInput = requireElement<HTMLInputElement>("login-identifier");
 const loginPasswordInput = requireElement<HTMLInputElement>("login-password");
 const loginButton = requireElement<HTMLButtonElement>("login-btn");
 const loginStatus = requireElement<HTMLDivElement>("login-status");
@@ -159,6 +161,16 @@ const runeList = maybeElement<HTMLDivElement>("rune-list");
 const runeStatus = maybeElement<HTMLDivElement>("rune-status");
 const runeClearButton = maybeElement<HTMLButtonElement>("rune-clear");
 
+const bagTabItems = maybeElement<HTMLButtonElement>("bag-tab-items");
+const bagTabEquipment = maybeElement<HTMLButtonElement>("bag-tab-equipment");
+const bagViewItems = maybeElement<HTMLDivElement>("bag-view-items");
+const bagViewEquipment = maybeElement<HTMLDivElement>("bag-view-equipment");
+const equipmentWeapon = maybeElement<HTMLDivElement>("equipment-weapon");
+const equipmentArmour = maybeElement<HTMLDivElement>("equipment-armour");
+const equipmentWeaponClear = maybeElement<HTMLButtonElement>("equipment-weapon-clear");
+const equipmentArmourClear = maybeElement<HTMLButtonElement>("equipment-armour-clear");
+const equipmentList = maybeElement<HTMLDivElement>("equipment-list");
+
 const panelButtons = Array.from(
   document.querySelectorAll<HTMLButtonElement>("[data-panel-btn]"),
 );
@@ -186,6 +198,7 @@ let lastStatusLine = "";
 let currentCraftingView: CraftingPanelView | null = null;
 let currentProgression: ProgressionSnapshot | null = null;
 let selectedRuneSlotIndex = 0;
+let currentInventorySlots: InventorySlotView[] = [];
 
 function hideOverlay(node: HTMLElement | null): void {
   if (!node) {
@@ -384,6 +397,15 @@ function renderProgression(snapshot: ProgressionSnapshot | null): void {
       : `Escolha uma runa para o slot ${selectedRuneSlotIndex + 1}.`;
   }
 
+  if (equipmentWeapon) {
+    equipmentWeapon.textContent =
+      snapshot?.equipment?.weapon ? String(snapshot.equipment.weapon) : "Nenhuma equipada";
+  }
+  if (equipmentArmour) {
+    equipmentArmour.textContent =
+      snapshot?.equipment?.armour ? String(snapshot.equipment.armour) : "Nenhuma equipada";
+  }
+
   if (runeClearButton) {
     runeClearButton.disabled = !snapshot?.equippedRunes[selectedRuneSlotIndex];
   }
@@ -545,6 +567,7 @@ function showItemTooltip(slot: InventorySlotView, clientX: number, clientY: numb
 }
 
 function setInventory(slots: InventorySlotView[], summary: string): void {
+  currentInventorySlots = slots;
   if (inventorySummary) {
     inventorySummary.textContent = summary;
   }
@@ -603,6 +626,60 @@ function setInventory(slots: InventorySlotView[], summary: string): void {
     }
 
     inventoryGrid.appendChild(node);
+  }
+
+  renderEquipmentChoices();
+}
+
+function setBagTab(tab: "items" | "equipment"): void {
+  bagTabItems?.classList.toggle("is-active", tab === "items");
+  bagTabEquipment?.classList.toggle("is-active", tab === "equipment");
+  bagViewItems?.classList.toggle("is-active", tab === "items");
+  bagViewEquipment?.classList.toggle("is-active", tab === "equipment");
+  if (tab === "equipment") {
+    renderEquipmentChoices();
+  }
+}
+
+function renderEquipmentChoices(): void {
+  if (!equipmentList) return;
+  equipmentList.replaceChildren();
+
+  const equippable = currentInventorySlots
+    .filter((slot) => !slot.empty && slot.itemId)
+    .map((slot) => slot.itemId as string)
+    .filter((itemId) => slotForItem(itemId) !== null);
+
+  if (equippable.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "stats-subtitle";
+    empty.textContent = "Nenhum item equipável no inventário.";
+    equipmentList.appendChild(empty);
+    return;
+  }
+
+  for (const itemId of equippable) {
+    const def = (EQUIPPABLE_ITEMS as Record<string, { slot: string }>)[itemId];
+    const slot = def?.slot ?? slotForItem(itemId);
+    if (!slot) continue;
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "rune-card";
+    button.dataset.equipItemId = itemId;
+    button.dataset.equipSlot = slot;
+
+    const title = document.createElement("span");
+    title.className = "rune-card-title";
+    title.textContent = itemId;
+    button.appendChild(title);
+
+    const meta = document.createElement("span");
+    meta.className = "rune-card-meta";
+    meta.textContent = slot === "weapon" ? "Arma" : "Armadura";
+    button.appendChild(meta);
+
+    equipmentList.appendChild(button);
   }
 }
 
@@ -904,6 +981,26 @@ function bindHudControlsOnce(): void {
     forceCloseCraftingPanel();
   });
 
+  bindImmediateButton(bagTabItems, () => setBagTab("items"));
+  bindImmediateButton(bagTabEquipment, () => setBagTab("equipment"));
+
+  bindImmediateButton(equipmentWeaponClear, () => {
+    getWorldScene()?.equipItemFromHud("weapon", null);
+  });
+  bindImmediateButton(equipmentArmourClear, () => {
+    getWorldScene()?.equipItemFromHud("armour", null);
+  });
+
+  equipmentList?.addEventListener("click", (ev) => {
+    const target = ev.target;
+    if (!(target instanceof HTMLElement)) return;
+    const button = target.closest<HTMLButtonElement>("[data-equip-item-id]");
+    const itemId = button?.dataset.equipItemId;
+    const slot = button?.dataset.equipSlot;
+    if (!itemId || (slot !== "weapon" && slot !== "armour")) return;
+    getWorldScene()?.equipItemFromHud(slot, itemId);
+  });
+
   bindImmediateButton(craftingSubmitButton, () => {
     getWorldScene()?.craftSelectedRecipeFromHud();
   });
@@ -1018,6 +1115,9 @@ function startGame(token: string, characterName: string, characterClass: string)
   setBarFill(hudMpFill, 1);
   setInteractionPrompt(null);
   setInventory([], "Bolsa vazia");
+  setBagTab("items");
+  if (equipmentWeapon) equipmentWeapon.textContent = "Nenhuma equipada";
+  if (equipmentArmour) equipmentArmour.textContent = "Nenhuma equipada";
   renderProgression(null);
   renderCraftingPanel({
     open: false,
@@ -1044,6 +1144,8 @@ function startGame(token: string, characterName: string, characterClass: string)
     backgroundColor: "#0b1412",
     width: window.innerWidth,
     height: window.innerHeight,
+    pixelArt: true,
+    antialias: false,
     scale: {
       mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -1101,12 +1203,12 @@ async function requestAuth(
   return sessionFromAuthResponse(parsed.data);
 }
 
-async function tryLogin(email: string, password: string): Promise<void> {
+async function tryLogin(login: string, password: string): Promise<void> {
   setAuthBusy(true);
   setLoginStatus("Autenticando...");
   setRegisterStatus("");
   try {
-    const session = await requestAuth("/auth/login", { email, password });
+    const session = await requestAuth("/auth/login", { login, password });
     startGame(session.token, session.characterName, session.characterClass);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro de login";
@@ -1166,9 +1268,9 @@ loginForm.addEventListener("submit", (ev) => {
   if (game) {
     return;
   }
-  const email = loginEmailInput.value.trim();
+  const login = loginIdentifierInput.value.trim();
   const password = loginPasswordInput.value;
-  void tryLogin(email, password);
+  void tryLogin(login, password);
 });
 
 registerForm.addEventListener("submit", (ev) => {

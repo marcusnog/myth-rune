@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { z } from "zod";
 import {
   baseStatsForClass,
   type CharacterClassId,
@@ -6,6 +7,7 @@ import {
 import type pg from "pg";
 import * as characterRepository from "../repositories/characterRepository.js";
 import * as userRepository from "../repositories/userRepository.js";
+import type { UserRow } from "../repositories/userRepository.js";
 import { signGameToken } from "./jwtService.js";
 import { config } from "../config.js";
 import type { AuthResponse } from "@myth-of-rune/shared";
@@ -74,17 +76,29 @@ export async function register(
   }
 }
 
+async function findUserForLogin(
+  client: pg.PoolClient,
+  login: string,
+): Promise<UserRow | null> {
+  const trimmed = login.trim();
+  const asEmail = z.string().email().safeParse(trimmed);
+  if (asEmail.success) {
+    return userRepository.findUserByEmail(client, asEmail.data.toLowerCase());
+  }
+  return userRepository.findUserByCharacterName(client, trimmed);
+}
+
 export async function login(
   client: pg.PoolClient,
-  input: { email: string; password: string },
+  input: { login: string; password: string },
 ): Promise<AuthResponse> {
-  const user = await userRepository.findUserByEmail(client, input.email);
+  const user = await findUserForLogin(client, input.login);
   if (!user) {
-    throw new AuthError("INVALID_CREDENTIALS", "Invalid email or password", 401);
+    throw new AuthError("INVALID_CREDENTIALS", "Invalid login or password", 401);
   }
   const ok = await bcrypt.compare(input.password, user.password_hash);
   if (!ok) {
-    throw new AuthError("INVALID_CREDENTIALS", "Invalid email or password", 401);
+    throw new AuthError("INVALID_CREDENTIALS", "Invalid login or password", 401);
   }
   const character = await characterRepository.findCharacterByUserId(
     client,
