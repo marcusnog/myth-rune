@@ -1,0 +1,24 @@
+---
+description: Myth of Rune — Godot 4 / GDScript conventions (client/)
+globs: client/**/*
+alwaysApply: false
+---
+
+# Godot / GDScript (Myth of Rune)
+
+## Sprites and assets
+
+- **Never** use `Sprite2D.region_enabled` for sprite sheets. Use **`AtlasTexture` per frame** inside `SpriteFrames` (same pattern as `character_sprite.gd`).
+- **`res://` resolves under `client/`** — game assets live in `client/assets/`, not `tools/` or repo root.
+- **Pixel art**: project uses nearest filtering and pixel snap — do not introduce linear filtering that breaks pixel art.
+- After changing/generating mob PNGs: run `tools/verify_mob_atlas.py --mob <name>` and confirm `frame_size × columns/rows` matches the PNG before committing.
+- `goblin_animations.json` (if present) is documentation only — not read by `CharacterSprite` at runtime unless code explicitly loads it.
+
+## Multiplayer and wiring
+
+- WebSocket: connect using **`GameConfig`** (gateway) at `/ws?token=…`.
+- **EventBus** for global signals (skills, HP, chat, etc.); avoid tight cross-scene node references.
+
+## Map
+
+- Play area **800×600** game units — any client or shared movement/spawn logic must stay consistent with **world-server `MAP_BOUNDS`**.

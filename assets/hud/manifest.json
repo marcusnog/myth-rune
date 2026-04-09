@@ -1,0 +1,31 @@
+{
+  "style": "fantasy_rpg_golden_medieval",
+  "texture_paths": {
+    "frames": {
+      "panel_bg": "frames/panel_bg.png",
+      "frame_corner_tl": "frames/frame_corner_tl.png",
+      "frame_corner_tr": "frames/frame_corner_tr.png",
+      "frame_corner_bl": "frames/frame_corner_bl.png",
+      "frame_corner_br": "frames/frame_corner_br.png",
+      "frame_border_h": "frames/frame_border_h.png",
+      "frame_border_v": "frames/frame_border_v.png",
+      "avatar_frame": "frames/avatar_frame.png"
+    },
+    "bars": {
+      "bar_hp_fill": "bars/bar_hp_fill.png",
+      "bar_mp_fill": "bars/bar_mp_fill.png",
+      "bar_skill_fill": "bars/bar_skill_fill.png",
+      "bar_bg": "bars/bar_bg.png"
+    },
+    "slots": {
+      "slot_normal": "slots/slot_normal.png",
+      "slot_hover": "slots/slot_hover.png",
+      "slot_selected": "slots/slot_selected.png"
+    },
+    "tabs": {
+      "tab_active": "tabs/tab_active.png",
+      "tab_inactive": "tabs/tab_inactive.png"
+    }
+  },
+  "reference_mockup": "references/hud_reference_mockup.png"
+}

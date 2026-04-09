@@ -1,0 +1,36 @@
+{
+  "name": "myth-of-rune",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "gateway",
+    "login-server",
+    "world-server",
+    "combat-server",
+    "web-client"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "dev": "concurrently -k -n login,world,combat,gateway -c blue,green,yellow,magenta \"npm run dev -w login-server\" \"npm run dev -w world-server\" \"npm run dev -w combat-server\" \"npm run dev -w gateway\"",
+    "dev:all": "concurrently -k -n login,world,combat,gateway,web -c blue,green,yellow,magenta,cyan \"npm run dev -w login-server\" \"npm run dev -w world-server\" \"npm run dev -w combat-server\" \"npm run dev -w gateway\" \"npm run dev -w web-client\"",
+    "dev:login": "npm run dev -w login-server",
+    "dev:gateway": "npm run dev -w gateway",
+    "dev:world": "npm run dev -w world-server",
+    "dev:combat": "npm run dev -w combat-server",
+    "dev:web": "npm run dev -w web-client",
+    "build:web": "npm run build -w web-client",
+    "migrate": "npm run migrate -w login-server",
+    "check:health": "node scripts/check-health.mjs",
+    "check:health:all": "node scripts/check-health.mjs --all",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "pngjs": "^7.0.0"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": "slash_fire_ice",
+  "class": "warrior",
+  "description": "Arc with orange fire and blue ice simultaneously",
+  "frame_size": { "width": 128, "height": 128 },
+  "sheet": "slash_fire_ice.png",
+  "frames": 8,
+  "fps": 14,
+  "loop": false,
+  "background": "transparent"
+}

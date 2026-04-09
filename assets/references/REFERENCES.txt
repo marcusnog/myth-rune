@@ -1,0 +1,10 @@
+Myth of Rune — visual references (chibi anime 2D)
+
+Place exported reference PNGs here before generating or integrating character art:
+
+  concept_combat.png    — Four classes in combat poses with ability VFX
+  walk_cycle_sheet.png  — Walk/run cycles for all four classes
+  pixel_party.png       — Party lineup in forest scene (tileset mood reference)
+
+Always match: chibi proportions, key class colors (warrior red cape, mage white hat,
+rogue black hood + red scarf, archer green cloak), transparent PNG for sprites.

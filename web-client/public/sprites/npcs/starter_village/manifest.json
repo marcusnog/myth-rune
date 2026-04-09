@@ -1,0 +1,105 @@
+{
+  "source": "npc_sprite_sheet.png",
+  "canvas": {
+    "width": 64,
+    "height": 64
+  },
+  "npcs": [
+    {
+      "id": "elder_bran",
+      "displayName": "Elder Bran",
+      "componentIndex": 1,
+      "sourceBox": {
+        "x": 116,
+        "y": 10,
+        "width": 26,
+        "height": 50
+      },
+      "path": "/sprites/npcs/starter_village/elder_bran.png"
+    },
+    {
+      "id": "merchant_mira",
+      "displayName": "Merchant Mira",
+      "componentIndex": 15,
+      "sourceBox": {
+        "x": 13,
+        "y": 70,
+        "width": 25,
+        "height": 49
+      },
+      "path": "/sprites/npcs/starter_village/merchant_mira.png"
+    },
+    {
+      "id": "healer_lyra",
+      "displayName": "Healer Lyra",
+      "componentIndex": 30,
+      "sourceBox": {
+        "x": 11,
+        "y": 130,
+        "width": 27,
+        "height": 50
+      },
+      "path": "/sprites/npcs/starter_village/healer_lyra.png"
+    },
+    {
+      "id": "ranger_kael",
+      "displayName": "Ranger Kael",
+      "componentIndex": 38,
+      "sourceBox": {
+        "x": 391,
+        "y": 131,
+        "width": 26,
+        "height": 50
+      },
+      "path": "/sprites/npcs/starter_village/ranger_kael.png"
+    },
+    {
+      "id": "blacksmith_torren",
+      "displayName": "Blacksmith Torren",
+      "componentIndex": 49,
+      "sourceBox": {
+        "x": 204,
+        "y": 192,
+        "width": 29,
+        "height": 51
+      },
+      "path": "/sprites/npcs/starter_village/blacksmith_torren.png"
+    },
+    {
+      "id": "guard_hale",
+      "displayName": "Guard Hale",
+      "componentIndex": 61,
+      "sourceBox": {
+        "x": 347,
+        "y": 249,
+        "width": 32,
+        "height": 54
+      },
+      "path": "/sprites/npcs/starter_village/guard_hale.png"
+    },
+    {
+      "id": "captain_brom",
+      "displayName": "Captain Brom",
+      "componentIndex": 72,
+      "sourceBox": {
+        "x": 624,
+        "y": 309,
+        "width": 38,
+        "height": 58
+      },
+      "path": "/sprites/npcs/starter_village/captain_brom.png"
+    },
+    {
+      "id": "mage_elowen",
+      "displayName": "Mage Elowen",
+      "componentIndex": 78,
+      "sourceBox": {
+        "x": 563,
+        "y": 311,
+        "width": 33,
+        "height": 52
+      },
+      "path": "/sprites/npcs/starter_village/mage_elowen.png"
+    }
+  ]
+}

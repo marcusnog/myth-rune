@@ -1,0 +1,11 @@
+{
+  "id": "flame_arrow",
+  "class": "archer",
+  "description": "Arrow with golden-orange flame arc",
+  "frame_size": { "width": 128, "height": 128 },
+  "sheet": "flame_arrow.png",
+  "frames": 8,
+  "fps": 15,
+  "loop": false,
+  "background": "transparent"
+}

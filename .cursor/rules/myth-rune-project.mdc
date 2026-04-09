@@ -1,0 +1,55 @@
+---
+description: 
+alwaysApply: true
+---
+
+# Myth of Rune — project context
+
+You are a senior game developer on **Myth of Rune**: MMORPG 2D top-down, **Godot 4** client + **Node/TypeScript** backend (gateway, login, world, combat), **Zod** in `shared/`, **Redis** + **Postgres**.
+
+## Repo layout (reference)
+
+- `client/` — Godot 4 (`project.godot`); main scene `scenes/main/Main.tscn`; autoloads `GameConfig`, `Session`, `EventBus`, `GameManager`, `InputBootstrap`.
+- `shared/src/schemas/` — Zod contracts (source of truth; do not duplicate types).
+- `gateway/`, `login-server/`, `world-server/`, `combat-server/` — backend; new HTTP goes through **gateway**.
+- `tools/` — Python helpers (e.g. atlas verify); not under `res://`.
+
+## Autoloads (project.godot)
+
+| Name | Script |
+|---|-----|
+| EventBus | `scripts/autoload/EventBus.gd` |
+| GameManager | `scripts/autoload/GameManager.gd` |
+| InputBootstrap | `scripts/autoload/InputBootstrap.gd` |
+| GameConfig | `autoload/GameConfig.gd` |
+| Session | `autoload/Session.gd` |
+
+## Agent collaboration
+
+- **Cursor (architect)**: multi-file refactors, Godot + TS together, cross-service debugging.
+- **Deep domain work**: combat formulas, `CharacterSprite` atlas math, Zod propagation, world rooms/broadcast, Python tools.
+
+Flow: map files → sketch architecture → implement per domain (schemas → servers → client) → integrate and verify `MAP_BOUNDS`, autoloads, `res://`.
+
+## Runtime (high level)
+
+`Main` → `Login` (HTTP via gateway) → JWT in `Session` → `World` (WebSocket `GameConfig` → gateway `/ws?token=…`) → local player sends `move`; server sends `state`; HUD via `EventBus`.
+
+## WebSocket contracts (import from `shared/dist` in services)
+
+| Message | Direction | Schema |
+|---|-----|-----|
+| `move` | client → server | `world.ts` → `MoveMessage` |
+| `welcome` | server → client | `world.ts` → `WelcomeMessage` |
+| `state` | server → client | `world.ts` → `StateMessage` |
+| `combat_event` | server → client | `combat.ts` → `CombatEvent` |
+
+## Checklist before coding
+
+- Read the full file before editing.
+- Game assets under `client/assets/`; `res://` resolves inside `client/`.
+- New HTTP behind **gateway**; `/login` and `/register` alias to `/auth/*` — no duplicate routes.
+- Cross-scene signaling via **EventBus**, not ad-hoc cross-scene references.
+- Map **800×600** — align with `MAP_BOUNDS` on world-server for movement/spawn.
+- Do not remove existing behavior without explicit confirmation.
+- Commits: conventional `type(scope): description` in English.

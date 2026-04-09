@@ -1,0 +1,1842 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Myth Rune Web Client</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=IBM+Plex+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg-top: #11241f;
+        --bg-bottom: #0b1412;
+        --panel: #2a160ce6;
+        --panel-border: #9e6f39;
+        --text: #f2e8d4;
+        --text-dim: #cbb694;
+        --accent: #4ba97f;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        color: var(--text);
+        font-family: "IBM Plex Mono", monospace;
+        background: radial-gradient(circle at 20% 0%, var(--bg-top), var(--bg-bottom) 72%);
+      }
+
+      #app {
+        min-height: 100%;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 20% 8%, #2f6f31cc, transparent 38%),
+          radial-gradient(circle at 78% 16%, #28642ccc, transparent 34%),
+          radial-gradient(circle at 50% 50%, #315f2fcc 0%, #184123dd 48%, #0e2a1aee 100%);
+      }
+
+      #app::before {
+        content: "";
+        position: absolute;
+        inset: -18%;
+        background:
+          repeating-radial-gradient(circle at 0 0, #7baa4f22 0, #7baa4f22 3px, #0000 3px, #0000 14px),
+          repeating-radial-gradient(circle at 100% 100%, #63933d22 0, #63933d22 3px, #0000 3px, #0000 12px);
+        filter: blur(0.2px);
+        pointer-events: none;
+      }
+
+      .auth-shell {
+        width: min(560px, calc(100vw - 40px));
+        position: relative;
+        z-index: 1;
+      }
+
+      .auth-banner {
+        margin: 0 0 10px;
+        text-align: center;
+        text-shadow: 0 2px 0 #251308;
+      }
+
+      .auth-banner h1 {
+        margin: 0;
+        font-family: "Cinzel", serif;
+        font-size: 44px;
+        letter-spacing: 0.06em;
+        color: #f5ddac;
+      }
+
+      .auth-banner p {
+        margin: 6px 0 0;
+        font-size: 13px;
+        color: #e7c992;
+      }
+
+      .auth-mobile-tabs {
+        display: none !important;
+        gap: 8px;
+        margin: 0 auto 12px;
+        width: min(420px, 100%);
+      }
+
+      .auth-mobile-tab {
+        flex: 1;
+        border: 1px solid #68401f;
+        border-radius: 7px;
+        padding: 8px 10px;
+        background: linear-gradient(180deg, #522c18, #241208);
+        color: #e6bf83;
+        font-family: "Cinzel", serif;
+        font-size: 20px;
+        cursor: pointer;
+      }
+
+      .auth-mobile-tab.active {
+        box-shadow: inset 0 0 0 1px #ca8a45;
+        color: #ffe1aa;
+      }
+
+      .auth-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0;
+      }
+
+      #app[data-auth-mode="login"] #auth-card-register {
+        display: none;
+      }
+
+      #app[data-auth-mode="register"] #auth-card-login {
+        display: none;
+      }
+
+      .auth-card {
+        background: linear-gradient(180deg, #3b2114f2, #1b1009f3);
+        border: 2px solid #9b6f3a;
+        border-radius: 10px;
+        box-shadow: inset 0 0 0 1px #2a170b, 0 14px 32px #0008;
+        overflow: hidden;
+      }
+
+      .auth-card-head {
+        border-bottom: 1px solid #6f4a26;
+        padding: 14px 18px 10px;
+        background: linear-gradient(180deg, #562c16f0, #2a1309f0);
+      }
+
+      .auth-card-head h2 {
+        margin: 0;
+        text-align: center;
+        color: #f2cb8e;
+        font-family: "Cinzel", serif;
+        font-size: 42px;
+      }
+
+      .auth-card-body {
+        padding: 16px 16px 14px;
+      }
+
+      .auth-field {
+        display: grid;
+        gap: 5px;
+        margin-bottom: 11px;
+      }
+
+      .auth-field label {
+        color: #e3c18d;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .auth-field input,
+      .auth-field select {
+        width: 100%;
+        border: 1px solid #6f4a26;
+        border-radius: 6px;
+        padding: 9px 10px;
+        font: inherit;
+        color: #f7e6c5;
+        background: #130a05ed;
+        outline: none;
+      }
+
+      .auth-field input:focus,
+      .auth-field select:focus {
+        border-color: #cf8d46;
+        box-shadow: 0 0 0 2px #a46f3833;
+      }
+
+      .auth-check {
+        margin: 2px 0 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: #dcc399;
+      }
+
+      .auth-check input {
+        width: 14px;
+        height: 14px;
+        accent-color: #c78441;
+      }
+
+      .auth-links {
+        margin: 2px 0 10px;
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        font-size: 12px;
+      }
+
+      .auth-link {
+        color: #66c4f8;
+        text-decoration: none;
+      }
+
+      .auth-link:hover {
+        text-decoration: underline;
+      }
+
+      .auth-actions {
+        margin-top: 8px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .auth-btn {
+        border: 1px solid #6b431f;
+        border-radius: 6px;
+        padding: 10px 10px;
+        font-family: "Cinzel", serif;
+        font-size: 17px;
+        cursor: pointer;
+      }
+
+      .auth-btn.primary {
+        color: #f9ddab;
+        background: linear-gradient(180deg, #a8431f, #63270f);
+      }
+
+      .auth-btn.secondary {
+        color: #efcf9f;
+        background: linear-gradient(180deg, #5d351d, #2a160d);
+      }
+
+      .auth-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .status {
+        margin-top: 10px;
+        min-height: 18px;
+        font-size: 12px;
+        color: #ccb58e;
+      }
+
+      .status.error {
+        color: #ff9e93;
+      }
+
+      @media (max-width: 960px) {
+        .auth-banner h1 {
+          font-size: 38px;
+        }
+
+        .auth-grid {
+          gap: 14px;
+        }
+
+        .auth-card-head h2 {
+          font-size: 34px;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .auth-shell {
+          width: min(460px, calc(100vw - 24px));
+        }
+      }
+
+      #game-shell {
+        position: fixed;
+        inset: 0;
+        display: none;
+      }
+
+      #game-root {
+        position: absolute;
+        inset: 0;
+      }
+
+      #hud-root {
+        --hud-scale: 0.78;
+        --hud-opacity: 0.94;
+        position: absolute;
+        inset: 0;
+        z-index: 6;
+        transform-origin: top left;
+        transform: scale(var(--hud-scale));
+        width: calc(100% / var(--hud-scale));
+        height: calc(100% / var(--hud-scale));
+        opacity: var(--hud-opacity);
+        pointer-events: none;
+      }
+
+      .hud-panel {
+        background: linear-gradient(180deg, #3e2514ed, #1a0f08f0);
+        border: 2px solid #946533;
+        box-shadow: inset 0 0 0 1px #1d1008, 0 10px 18px #0008;
+        border-radius: 9px;
+        pointer-events: auto;
+      }
+
+      #hud-party {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        width: 258px;
+        padding: 7px;
+        display: grid;
+        grid-template-columns: 52px 1fr;
+        gap: 7px;
+      }
+
+      .portrait {
+        border: 1px solid #956935;
+        border-radius: 7px;
+        background: radial-gradient(circle at 40% 20%, #6a4a33, #2a180f 68%);
+        display: grid;
+        place-items: center;
+        font-family: "Cinzel", serif;
+        font-size: 24px;
+        color: #f6d8a0;
+      }
+
+      .party-meta {
+        display: grid;
+        gap: 4px;
+      }
+
+      .party-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+      }
+
+      .party-badges {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .party-name {
+        font-weight: 700;
+        color: #ffdc9d;
+        max-width: 118px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .party-class {
+        color: #9ed6ff;
+        text-transform: uppercase;
+        font-size: 10px;
+      }
+
+      .party-level {
+        padding: 1px 5px;
+        border: 1px solid #7f5f2e;
+        border-radius: 999px;
+        color: #ffe9b8;
+        background: linear-gradient(180deg, #6b4a20, #36200f);
+        font-size: 10px;
+      }
+
+      .resource-bar {
+        position: relative;
+        height: 10px;
+        border: 1px solid #100a06;
+        box-shadow: inset 0 0 0 1px #4b2f1a;
+        border-radius: 3px;
+        background: #0008;
+        overflow: hidden;
+      }
+
+      .resource-fill {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        transition: width 110ms linear;
+      }
+
+      .resource-fill.hp {
+        background: linear-gradient(180deg, #db625f, #b6322f);
+      }
+
+      .resource-fill.mp {
+        background: linear-gradient(180deg, #52a6ff, #245dbe);
+      }
+
+      .resource-fill.exp {
+        background: linear-gradient(180deg, #f1c85f, #b67829);
+      }
+
+      .resource-text {
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        color: #efd8b2;
+      }
+
+      #hud-status {
+        color: #93f0c3;
+        max-width: 90px;
+        text-align: right;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #hud-right {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 286px;
+        padding: 7px;
+      }
+
+      .menu-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr) 34px;
+        gap: 5px;
+        margin-bottom: 6px;
+      }
+
+      .menu-btn {
+        border: 1px solid #5e3d1e;
+        border-radius: 6px;
+        background: linear-gradient(180deg, #5b3620, #2c1a0f);
+        color: #d8b57e;
+        font-family: "Cinzel", serif;
+        font-size: 13px;
+        padding: 5px 0;
+      }
+
+      .menu-btn.is-active {
+        color: #ffe3af;
+        box-shadow: inset 0 0 0 1px #ab7c3a;
+      }
+
+      .menu-btn.ghost {
+        font-size: 16px;
+      }
+
+      .menu-btn.icon-btn {
+        display: grid;
+        place-items: center;
+        padding: 5px;
+      }
+
+      .craft-icon {
+        position: relative;
+        width: 18px;
+        height: 18px;
+        display: inline-block;
+      }
+
+      .craft-icon::before,
+      .craft-icon::after {
+        content: "";
+        position: absolute;
+        left: 8px;
+        top: 1px;
+        width: 2px;
+        height: 16px;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #f4d89f, #b06d32);
+        transform-origin: center;
+        box-shadow: 0 0 0 1px #2a160b44;
+      }
+
+      .craft-icon::before {
+        transform: rotate(45deg);
+      }
+
+      .craft-icon::after {
+        transform: rotate(-45deg);
+      }
+
+      .panel-view {
+        display: none;
+      }
+
+      .panel-view.is-active {
+        display: block;
+      }
+
+      #minimap {
+        min-height: 176px;
+        aspect-ratio: 1 / 1;
+        border-radius: 7px;
+        border: 1px solid #503119;
+        background:
+          linear-gradient(180deg, #09110cb3, #04060399),
+          url("/maps/starter_town/preview.png") center / cover no-repeat;
+        position: relative;
+        overflow: hidden;
+        box-shadow: inset 0 0 0 1px #1b120b, inset 0 0 26px #00000088;
+      }
+
+      #minimap::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(#ddc88b1f 1px, transparent 1px),
+          linear-gradient(90deg, #ddc88b1f 1px, transparent 1px),
+          linear-gradient(180deg, #00000000 0%, #08110ccc 100%);
+        background-size: 25% 25%, 25% 25%, 100% 100%;
+        pointer-events: none;
+      }
+
+      #minimap::after {
+        content: "Aldeia Inicial";
+        position: absolute;
+        left: 9px;
+        bottom: 8px;
+        padding: 3px 7px;
+        border: 1px solid #8f6d35;
+        border-radius: 999px;
+        background: #1c120bdd;
+        color: #f7ddb0;
+        font-family: "Cinzel", serif;
+        font-size: 11px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        pointer-events: none;
+      }
+
+      #minimap-marker {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        left: 50%;
+        top: 50%;
+        margin-left: -5px;
+        margin-top: -5px;
+        border-radius: 50%;
+        background: #ffe25a;
+        border: 1px solid #2b1f0d;
+        box-shadow: 0 0 10px #ffe25a88;
+        z-index: 1;
+      }
+
+      #minimap-pos {
+        margin-top: 5px;
+        font-size: 10px;
+        color: #ebd5ae;
+        text-align: right;
+      }
+
+      .small-list {
+        display: grid;
+        gap: 5px;
+        font-size: 11px;
+        color: #e8d2ae;
+      }
+
+      .stats-card {
+        display: grid;
+        gap: 9px;
+      }
+
+      .stats-level-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+
+      #stats-level {
+        font-family: "Cinzel", serif;
+        font-size: 18px;
+        color: #f6dba7;
+      }
+
+      #stats-exp-label,
+      .stats-subtitle {
+        font-size: 10px;
+        color: #d7c39e;
+      }
+
+      .stats-grid {
+        display: grid;
+        gap: 6px;
+      }
+
+      .stats-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 6px 8px;
+        border: 1px solid #5e3c1f;
+        border-radius: 6px;
+        background: linear-gradient(180deg, #311d11, #1a1009);
+        font-size: 11px;
+      }
+
+      .stats-runes-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .stats-runes-title {
+        font-family: "Cinzel", serif;
+        color: #f1d29a;
+        font-size: 15px;
+      }
+
+      #rune-status {
+        font-size: 10px;
+        color: #d0b88e;
+        text-align: right;
+      }
+
+      .rune-slots {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .rune-slot,
+      .rune-card,
+      #rune-clear {
+        border: 1px solid #6a4424;
+        border-radius: 7px;
+        background: linear-gradient(180deg, #4a2b18, #23140b);
+        color: #f0d7aa;
+        cursor: pointer;
+      }
+
+      .rune-slot {
+        min-height: 42px;
+        padding: 6px 8px;
+        font-size: 11px;
+      }
+
+      .rune-slot.is-selected {
+        box-shadow: inset 0 0 0 1px #c89546, 0 0 10px #a97a3955;
+      }
+
+      .rune-slot.is-filled {
+        border-color: color-mix(in srgb, var(--rune-color, #b77a42) 60%, #6a4424);
+        color: color-mix(in srgb, var(--rune-color, #f0d7aa) 72%, #fff1ce);
+      }
+
+      #rune-clear {
+        padding: 7px 10px;
+        font-family: "Cinzel", serif;
+        font-size: 12px;
+      }
+
+      #rune-clear:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .rune-list {
+        display: grid;
+        gap: 6px;
+      }
+
+      .rune-card {
+        padding: 8px 10px;
+        display: grid;
+        gap: 3px;
+        text-align: left;
+        border-color: color-mix(in srgb, var(--rune-color, #6a4424) 60%, #6a4424);
+      }
+
+      .rune-card.is-equipped {
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rune-color, #d19345) 70%, #f7ddb0);
+      }
+
+      .rune-card.is-locked {
+        opacity: 0.6;
+      }
+
+      .rune-card-title {
+        font-family: "Cinzel", serif;
+        color: color-mix(in srgb, var(--rune-color, #f0d7aa) 72%, #fff1ce);
+        font-size: 14px;
+      }
+
+      .rune-card-meta,
+      .rune-card-desc,
+      .rune-card-bonus {
+        font-size: 10px;
+      }
+
+      .rune-card-bonus {
+        color: #9fe1ff;
+      }
+
+      .small-row {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .meter {
+        height: 8px;
+        border: 1px solid #4e321c;
+        border-radius: 999px;
+        background: #1b0f09;
+        overflow: hidden;
+        margin-top: 4px;
+      }
+
+      .meter > span {
+        display: block;
+        height: 100%;
+        background: linear-gradient(90deg, #33a0dc, #7ad2f8);
+      }
+
+      .bag-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 5px;
+      }
+
+      .bag-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .bag-summary {
+        font-size: 10px;
+        color: #efd5a4;
+      }
+
+      .slot {
+        aspect-ratio: 1;
+        border: 1px solid #664326;
+        border-radius: 5px;
+        background: linear-gradient(180deg, #2a180e, #140c07);
+        color: #f1cb74;
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .inventory-slot {
+        position: relative;
+        border-color: color-mix(in srgb, var(--slot-accent, #6b4e32) 60%, #3a2413);
+        background:
+          radial-gradient(circle at top, color-mix(in srgb, var(--slot-accent, #6b4e32) 26%, transparent), transparent 62%),
+          linear-gradient(180deg, #2a180e, #140c07);
+      }
+
+      .inventory-slot.empty {
+        color: #8a7455;
+      }
+
+      .inventory-label {
+        font-size: 10px;
+        letter-spacing: 0.04em;
+      }
+
+      .inventory-icon {
+        /* rendered at 16px native, CSS scales 2× */
+        width: 16px;
+        height: 16px;
+        object-fit: none;
+        /* object-position set inline per item */
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        transform: scale(2);
+        transform-origin: center;
+        filter: drop-shadow(0 1px 3px rgba(0,0,0,0.7));
+      }
+
+      .inventory-count {
+        position: absolute;
+        right: 4px;
+        bottom: 3px;
+        font-size: 10px;
+        color: #f8e3b1;
+      }
+
+      .item-tooltip {
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 80;
+        width: min(240px, calc(100vw - 24px));
+        padding: 10px 12px;
+        border: 1px solid rgba(191, 146, 75, 0.8);
+        border-radius: 10px;
+        background:
+          linear-gradient(180deg, rgba(51, 31, 17, 0.96), rgba(17, 9, 5, 0.98));
+        box-shadow:
+          0 12px 30px rgba(0, 0, 0, 0.35),
+          inset 0 1px 0 rgba(255, 223, 170, 0.08);
+        color: #f8e7bc;
+        pointer-events: none;
+        backdrop-filter: blur(6px);
+      }
+
+      .item-tooltip-title {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+
+      .item-tooltip-meta {
+        margin-top: 2px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #d4b16f;
+      }
+
+      .item-tooltip-description {
+        margin-top: 8px;
+        font-size: 11px;
+        line-height: 1.45;
+        color: #f1dfba;
+      }
+
+      .slot.active {
+        box-shadow: inset 0 0 0 1px #ab7c3a, 0 0 10px #cc8f2f55;
+      }
+
+      #hud-chat {
+        position: absolute;
+        left: 10px;
+        bottom: 10px;
+        width: min(520px, calc(100% - 330px));
+        min-width: 330px;
+        padding: 6px;
+      }
+
+      .chat-tabs {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 5px;
+      }
+
+      .chat-tab {
+        border: 1px solid #5d3d21;
+        border-radius: 5px;
+        background: linear-gradient(180deg, #5b3420, #2d1a0f);
+        color: #e6bf84;
+        padding: 3px 8px;
+        font-family: "Cinzel", serif;
+        font-size: 12px;
+      }
+
+      #chat-log {
+        height: 98px;
+        border: 1px solid #6b4927;
+        border-radius: 6px;
+        padding: 6px;
+        background: linear-gradient(180deg, #180f0ae6, #0f0905f2);
+        overflow: hidden;
+        display: grid;
+        gap: 3px;
+        font-size: 11px;
+      }
+
+      .chat-line.system {
+        color: #f2ca67;
+      }
+
+      .chat-line.player {
+        color: #b9ffa4;
+      }
+
+      .chat-line.loot {
+        color: #8dd2ff;
+      }
+
+      #chat-input-row {
+        margin-top: 5px;
+        display: grid;
+        grid-template-columns: 1fr 50px;
+        gap: 5px;
+      }
+
+      #chat-input {
+        border: 1px solid #715028;
+        border-radius: 6px;
+        background: #0f0b08f2;
+        color: #f4dfbe;
+        padding: 6px 9px;
+        font: inherit;
+        font-size: 11px;
+      }
+
+      #chat-lang {
+        border: 1px solid #715028;
+        border-radius: 6px;
+        background: linear-gradient(180deg, #1f3f1b, #13280f);
+        color: #c7ff98;
+        font-weight: 700;
+        font-size: 11px;
+      }
+
+      #hud-hotbar {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        width: 286px;
+        padding: 6px;
+        display: grid;
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+        gap: 5px;
+      }
+
+      #interaction-prompt {
+        position: absolute;
+        left: 50%;
+        bottom: 116px;
+        transform: translateX(-50%) translateY(8px);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        /* hidden by default — only shown via .visible class */
+        opacity: 0;
+        pointer-events: none !important;
+        visibility: hidden;
+        transition: opacity 180ms ease, transform 180ms ease, visibility 0ms linear 180ms;
+      }
+
+      #interaction-prompt.visible {
+        opacity: 1;
+        pointer-events: auto !important;
+        visibility: visible;
+        transform: translateX(-50%) translateY(0px);
+        transition: opacity 180ms ease, transform 180ms ease, visibility 0ms linear 0ms;
+      }
+
+      .hint-key {
+        min-width: 24px;
+        height: 24px;
+        display: grid;
+        place-items: center;
+        border: 1px solid #d6a460;
+        border-radius: 6px;
+        background: linear-gradient(180deg, #6d4523, #2d170d);
+        color: #ffe4b4;
+        font-family: "Cinzel", serif;
+        font-size: 14px;
+        line-height: 1;
+      }
+
+      #interaction-prompt-text {
+        color: #f6dfb0;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      #action-progress {
+        --action-accent: #d6b56f;
+        --action-accent-soft: #fff0b6;
+        --action-panel-glow: #d6b56f33;
+        position: absolute;
+        left: 50%;
+        bottom: 162px;
+        transform: translateX(-50%);
+        width: min(360px, calc(100% - 40px));
+        padding: 9px 12px 10px;
+        overflow: hidden;
+      }
+
+      #action-progress::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at 0% 50%, var(--action-panel-glow), transparent 42%),
+          linear-gradient(90deg, #ffffff10, transparent 24%, transparent 76%, #ffffff10);
+        animation: actionPanelSweep 2.2s linear infinite;
+        pointer-events: none;
+      }
+
+      #action-progress[data-tone="woodcutting"] {
+        --action-accent: #4fb871;
+        --action-accent-soft: #e2d277;
+        --action-panel-glow: #4fb87133;
+      }
+
+      #action-progress[data-tone="mining"] {
+        --action-accent: #57aef5;
+        --action-accent-soft: #cce9ff;
+        --action-panel-glow: #57aef533;
+      }
+
+      #action-progress[data-tone="crafting"] {
+        --action-accent: #d1844d;
+        --action-accent-soft: #f0cf74;
+        --action-panel-glow: #d1844d33;
+      }
+
+      .action-progress-visual {
+        position: relative;
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr);
+        gap: 10px;
+        align-items: center;
+      }
+
+      #action-progress-badge {
+        position: relative;
+        width: 38px;
+        height: 38px;
+        display: grid;
+        place-items: center;
+        border: 1px solid color-mix(in srgb, var(--action-accent) 70%, #67401f);
+        border-radius: 999px;
+        background:
+          radial-gradient(circle at 30% 30%, var(--action-accent-soft), color-mix(in srgb, var(--action-accent) 65%, #25140b) 72%),
+          linear-gradient(180deg, #5f3b20, #2b180d);
+        color: #1e120a;
+        font-family: "Cinzel", serif;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-indent: 0.1em;
+        box-shadow: 0 0 16px var(--action-panel-glow);
+        animation: actionBadgePulse 1.2s ease-in-out infinite;
+        isolation: isolate;
+      }
+
+      #action-progress-badge::before {
+        content: "";
+        position: absolute;
+        inset: -5px;
+        border: 1px solid color-mix(in srgb, var(--action-accent) 60%, transparent);
+        border-radius: inherit;
+        opacity: 0;
+        animation: actionBadgeRing 1.2s ease-out infinite;
+      }
+
+      .action-progress-copy {
+        display: grid;
+        gap: 6px;
+      }
+
+      .action-progress-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+
+      #action-progress-label {
+        color: #ffdca7;
+        font-family: "Cinzel", serif;
+        font-size: 15px;
+      }
+
+      #action-progress-percent {
+        color: #cbb58d;
+        font-size: 11px;
+      }
+
+      .action-progress-bar {
+        position: relative;
+        height: 12px;
+        border: 1px solid #684424;
+        border-radius: 999px;
+        background: #130b06;
+        overflow: hidden;
+        box-shadow: inset 0 0 0 1px #22130a;
+      }
+
+      #action-progress-fill {
+        position: relative;
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(
+          90deg,
+          color-mix(in srgb, var(--action-accent) 82%, #120904),
+          var(--action-accent-soft)
+        );
+        transition: width 90ms linear;
+        box-shadow: 0 0 14px color-mix(in srgb, var(--action-accent) 28%, transparent);
+      }
+
+      #action-progress-fill::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+          120deg,
+          #ffffff26 0 10px,
+          #00000000 10px 20px
+        );
+        animation: actionProgressStripes 0.85s linear infinite;
+      }
+
+      #action-progress-fill::after {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 -40px;
+        width: 40px;
+        background: linear-gradient(90deg, #ffffff00, #ffffff88, #ffffff00);
+        animation: actionProgressShine 1.25s ease-in-out infinite;
+      }
+
+      .action-progress-foot {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      #action-progress-detail {
+        color: #edd8b3;
+        font-size: 11px;
+      }
+
+      #action-progress-hint {
+        color: #cbb58d;
+        font-size: 10px;
+      }
+
+      @keyframes actionPanelSweep {
+        0% {
+          transform: translateX(-12%);
+        }
+        100% {
+          transform: translateX(12%);
+        }
+      }
+
+      @keyframes actionBadgePulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+      }
+
+      @keyframes actionBadgeRing {
+        0% {
+          transform: scale(0.84);
+          opacity: 0.75;
+        }
+        100% {
+          transform: scale(1.3);
+          opacity: 0;
+        }
+      }
+
+      @keyframes actionProgressStripes {
+        0% {
+          transform: translateX(0);
+        }
+        100% {
+          transform: translateX(20px);
+        }
+      }
+
+      @keyframes actionProgressShine {
+        0% {
+          transform: translateX(0);
+        }
+        100% {
+          transform: translateX(340px);
+        }
+      }
+
+      #dialogue-box {
+        position: absolute;
+        left: 50%;
+        bottom: 138px;
+        transform: translateX(-50%);
+        width: min(700px, calc(100% - 40px));
+        padding: 12px 14px 10px;
+        display: grid;
+        gap: 8px;
+      }
+
+      .dialogue-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+
+      #dialogue-speaker {
+        font-family: "Cinzel", serif;
+        font-size: 20px;
+        color: #ffd79b;
+        letter-spacing: 0.04em;
+      }
+
+      #dialogue-step {
+        color: #cdb289;
+        font-size: 11px;
+      }
+
+      #dialogue-text {
+        min-height: 54px;
+        color: #f4ead6;
+        font-size: 13px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+
+      .dialogue-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        color: #d3bc96;
+        font-size: 11px;
+      }
+
+      .dialogue-keys {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .dialogue-buttons {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .dialogue-btn {
+        border: 1px solid #6c4d27;
+        border-radius: 6px;
+        background: linear-gradient(180deg, #4a2d19, #25140b);
+        color: #efd7a8;
+        font-family: "Cinzel", serif;
+        font-size: 12px;
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+
+      .dialogue-btn.primary {
+        color: #fff0c3;
+        box-shadow: inset 0 0 0 1px #b58a46;
+      }
+
+      #death-modal {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: min(420px, calc(100% - 40px));
+        padding: 18px 18px 16px;
+        display: grid;
+        gap: 12px;
+        text-align: center;
+        z-index: 20;
+        box-shadow: inset 0 0 0 1px #2d150d, 0 18px 40px #000a;
+      }
+
+      .death-title {
+        font-family: "Cinzel", serif;
+        font-size: 28px;
+        color: #ffb0a3;
+        letter-spacing: 0.04em;
+      }
+
+      #death-modal-text {
+        color: #f3dfc2;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      #death-respawn {
+        justify-self: center;
+        min-width: 180px;
+        border: 1px solid #8a5a2e;
+        border-radius: 8px;
+        background: linear-gradient(180deg, #8c4422, #4a2110);
+        color: #ffe1b0;
+        font-family: "Cinzel", serif;
+        font-size: 15px;
+        padding: 10px 16px;
+        cursor: pointer;
+      }
+
+      #crafting-panel {
+        position: absolute;
+        left: 50%;
+        top: 82px;
+        transform: translateX(-50%);
+        width: min(760px, calc(100% - 40px));
+        padding: 12px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .crafting-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+      }
+
+      .crafting-title {
+        font-family: "Cinzel", serif;
+        font-size: 24px;
+        color: #ffdc9d;
+      }
+
+      #crafting-status {
+        margin-top: 4px;
+        font-size: 11px;
+        color: #dcc399;
+      }
+
+      .crafting-head-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .crafting-body {
+        display: grid;
+        grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+        gap: 10px;
+      }
+
+      #crafting-recipe-list {
+        display: grid;
+        gap: 6px;
+        max-height: 360px;
+        overflow: auto;
+        padding-right: 2px;
+      }
+
+      .crafting-recipe {
+        border: 1px solid #65401f;
+        border-radius: 8px;
+        background: linear-gradient(180deg, #4a2b18, #23140b);
+        color: #f0d7aa;
+        padding: 8px 10px;
+        display: grid;
+        gap: 3px;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .crafting-recipe.is-active {
+        box-shadow: inset 0 0 0 1px #bd8b45, 0 0 10px #a97a3955;
+      }
+
+      .crafting-recipe-name {
+        font-family: "Cinzel", serif;
+        font-size: 16px;
+      }
+
+      .crafting-recipe-meta {
+        font-size: 10px;
+        color: #cdb289;
+      }
+
+      .crafting-recipe-output {
+        font-size: 11px;
+        color: #9fe1ff;
+      }
+
+      .crafting-recipe-output.is-muted {
+        color: #d19790;
+      }
+
+      .crafting-detail {
+        border: 1px solid #5a381d;
+        border-radius: 8px;
+        background: linear-gradient(180deg, #24150d, #140b06);
+        padding: 12px;
+        display: grid;
+        gap: 8px;
+      }
+
+      #crafting-recipe-name {
+        font-family: "Cinzel", serif;
+        font-size: 22px;
+        color: #ffdca7;
+      }
+
+      #crafting-recipe-meta,
+      #crafting-output {
+        font-size: 11px;
+        color: #ddc59e;
+      }
+
+      #crafting-materials {
+        display: grid;
+        gap: 6px;
+        min-height: 120px;
+      }
+
+      .crafting-material {
+        padding: 7px 9px;
+        border: 1px solid #5b3920;
+        border-radius: 6px;
+        background: #191009;
+        color: #9de9b0;
+        font-size: 11px;
+      }
+
+      .crafting-material.missing {
+        color: #ffaaa0;
+      }
+
+      .crafting-material.requirement {
+        color: #f4d18b;
+      }
+
+      #crafting-submit,
+      #crafting-close {
+        border: 1px solid #6c4d27;
+        border-radius: 6px;
+        background: linear-gradient(180deg, #4a2d19, #25140b);
+        color: #efd7a8;
+        font-family: "Cinzel", serif;
+        font-size: 12px;
+        padding: 8px 12px;
+        cursor: pointer;
+      }
+
+      #crafting-submit:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      #settings-modal {
+        position: absolute;
+        top: 74px;
+        right: 306px;
+        width: 240px;
+        padding: 8px;
+      }
+
+      .cfg-title {
+        margin: 0 0 8px;
+        font-family: "Cinzel", serif;
+        color: #efcb90;
+        font-size: 16px;
+      }
+
+      .cfg-row {
+        display: grid;
+        gap: 4px;
+        margin-bottom: 8px;
+        font-size: 11px;
+      }
+
+      .cfg-check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+      }
+
+      #settings-close {
+        width: 100%;
+        border: 1px solid #6f4d28;
+        background: linear-gradient(180deg, #5f3b20, #2a180d);
+        color: #f5d7a1;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      @media (max-width: 980px) {
+        #hud-right,
+        #hud-hotbar {
+          width: 250px;
+        }
+
+        #hud-chat {
+          width: min(420px, calc(100% - 270px));
+        }
+
+        #settings-modal {
+          right: 265px;
+        }
+      }
+
+      @media (max-width: 760px) {
+        #hud-right,
+        #hud-chat {
+          display: none;
+        }
+
+        #hud-hotbar {
+          width: calc(100% - 20px);
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        #interaction-prompt,
+        #action-progress,
+        #dialogue-box,
+        #crafting-panel {
+          width: calc(100% - 20px);
+        }
+
+        .crafting-body {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" data-auth-mode="login">
+      <section class="auth-shell">
+        <header class="auth-banner">
+          <h1>Myth Rune</h1>
+          <p>Entrar ou criar conta para iniciar a aventura</p>
+        </header>
+
+        <div class="auth-mobile-tabs">
+          <button id="auth-tab-login" class="auth-mobile-tab active" type="button">Login</button>
+          <button id="auth-tab-register" class="auth-mobile-tab" type="button">Registro</button>
+        </div>
+
+        <div class="auth-grid">
+          <article id="auth-card-login" class="auth-card">
+            <div class="auth-card-head">
+              <h2>Login</h2>
+            </div>
+            <div class="auth-card-body">
+              <form id="login-form" novalidate>
+                <div class="auth-field">
+                  <label for="login-email">Email</label>
+                  <input id="login-email" type="email" value="demo@mythrune.local" required />
+                </div>
+                <div class="auth-field">
+                  <label for="login-password">Password</label>
+                  <input id="login-password" type="password" value="password123" required />
+                </div>
+
+                <label class="auth-check" for="login-remember">
+                  <input id="login-remember" type="checkbox" checked />
+                  Remember password
+                </label>
+
+                <div class="auth-links">
+                  <a class="auth-link" href="#" id="forgot-password-link">Forgot Password?</a>
+                  <a class="auth-link" href="#" id="to-register-link">Create Account</a>
+                </div>
+
+                <div class="auth-actions">
+                  <button id="login-btn" class="auth-btn primary" type="submit">Login</button>
+                  <button id="login-quit-btn" class="auth-btn secondary" type="button">Quit Game</button>
+                </div>
+                <div id="login-status" class="status"></div>
+              </form>
+            </div>
+          </article>
+
+          <article id="auth-card-register" class="auth-card">
+            <div class="auth-card-head">
+              <h2>Registration</h2>
+            </div>
+            <div class="auth-card-body">
+              <form id="register-form" novalidate>
+                <div class="auth-field">
+                  <label for="register-email">Email</label>
+                  <input id="register-email" type="email" required />
+                </div>
+                <div class="auth-field">
+                  <label for="register-password">Password</label>
+                  <input id="register-password" type="password" required minlength="8" />
+                </div>
+                <div class="auth-field">
+                  <label for="register-confirm-password">Confirm Password</label>
+                  <input id="register-confirm-password" type="password" required minlength="8" />
+                </div>
+                <div class="auth-field">
+                  <label for="register-character-name">Character Name</label>
+                  <input id="register-character-name" type="text" minlength="2" maxlength="32" required />
+                </div>
+                <div class="auth-field">
+                  <label for="register-character-class">Class</label>
+                  <select id="register-character-class" required>
+                    <option value="warrior">Warrior</option>
+                    <option value="rogue">Rogue</option>
+                    <option value="mage">Mage</option>
+                    <option value="archer">Archer</option>
+                  </select>
+                </div>
+
+                <label class="auth-check" for="register-news">
+                  <input id="register-news" type="checkbox" checked />
+                  News & Updates
+                </label>
+
+                <div class="auth-links">
+                  <a class="auth-link" href="#" id="to-login-link">Back to Login</a>
+                </div>
+
+                <div class="auth-actions">
+                  <button id="register-btn" class="auth-btn primary" type="submit">Create Account</button>
+                  <button id="register-quit-btn" class="auth-btn secondary" type="button">Quit Game</button>
+                </div>
+                <div id="register-status" class="status"></div>
+              </form>
+            </div>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <div id="game-shell">
+      <div id="game-root"></div>
+
+      <div id="hud-root">
+        <section id="hud-party" class="hud-panel">
+          <div class="portrait" aria-hidden="true"><span id="hud-avatar-initial">H</span></div>
+          <div class="party-meta">
+            <div class="party-head">
+              <span id="hud-char" class="party-name">Hero</span>
+              <span class="party-badges">
+                <span id="hud-level" class="party-level">Lv 1</span>
+                <span id="hud-class" class="party-class">warrior</span>
+              </span>
+            </div>
+            <div class="resource-bar" aria-label="Health">
+              <div id="hud-hp-fill" class="resource-fill hp" style="width: 100%"></div>
+            </div>
+            <div class="resource-bar" aria-label="Energy">
+              <div id="hud-mp-fill" class="resource-fill mp" style="width: 100%"></div>
+            </div>
+            <div class="resource-bar" aria-label="Experience">
+              <div id="hud-exp-fill" class="resource-fill exp" style="width: 0%"></div>
+            </div>
+            <div class="resource-text">
+              <span id="hud-hp">-- / --</span>
+              <span id="hud-exp">0/0 XP</span>
+              <span id="hud-status">Conectando...</span>
+            </div>
+          </div>
+        </section>
+
+        <aside id="hud-right" class="hud-panel">
+          <div class="menu-row">
+            <button class="menu-btn is-active" data-panel-btn="map" type="button">Mapa</button>
+            <button class="menu-btn" data-panel-btn="stats" type="button">Stats</button>
+            <button class="menu-btn" data-panel-btn="bag" type="button">Bag</button>
+            <button id="crafting-menu-btn" class="menu-btn icon-btn" type="button" aria-label="Crafting">
+              <span class="craft-icon" aria-hidden="true"></span>
+            </button>
+            <button id="settings-open" class="menu-btn ghost" type="button">?</button>
+          </div>
+
+          <section id="panel-map" class="panel-view is-active">
+            <div id="minimap"><div id="minimap-marker"></div></div>
+            <div id="minimap-pos">x: -- | y: --</div>
+          </section>
+
+          <section id="panel-stats" class="panel-view">
+            <div class="stats-card">
+              <div class="stats-level-row">
+                <div id="stats-level">Nivel 1</div>
+                <div id="stats-exp-label">0/0 XP no nivel</div>
+              </div>
+              <div class="meter"><span id="stats-exp-fill" style="width: 0%"></span></div>
+              <div class="stats-subtitle">XP total: <span id="stats-total-xp">0</span></div>
+
+              <div class="stats-grid">
+                <div class="stats-row"><span>Vida Maxima</span><span id="stats-max-health">--</span></div>
+                <div class="stats-row"><span>Ataque</span><span id="stats-attack">--</span></div>
+                <div class="stats-row"><span>Defesa</span><span id="stats-defense">--</span></div>
+                <div class="stats-row"><span>Velocidade</span><span id="stats-speed">--</span></div>
+              </div>
+
+              <div class="stats-runes-head">
+                <div class="stats-runes-title">Runas</div>
+                <div id="rune-status">Escolha uma runa.</div>
+              </div>
+              <div id="rune-slots" class="rune-slots"></div>
+              <button id="rune-clear" type="button">Remover runa do slot</button>
+              <div id="rune-list" class="rune-list"></div>
+            </div>
+          </section>
+
+          <section id="panel-bag" class="panel-view">
+            <div class="bag-toolbar">
+              <div id="inventory-summary" class="bag-summary">Bolsa vazia</div>
+              <button id="crafting-open" class="menu-btn icon-btn" type="button" aria-label="Crafting">
+                <span class="craft-icon" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div id="inventory-grid" class="bag-grid" aria-live="polite"></div>
+          </section>
+        </aside>
+
+        <section id="hud-chat" class="hud-panel">
+          <div class="chat-tabs" aria-hidden="true">
+            <div class="chat-tab">Local</div>
+            <div class="chat-tab">Party</div>
+            <div class="chat-tab">Guild</div>
+          </div>
+          <div id="chat-log" aria-live="polite">
+            <div class="chat-line system">Welcome to Myth Rune!</div>
+            <div class="chat-line loot">Você recebeu 150 gold.</div>
+            <div class="chat-line player">[Party] Mage: dano doido</div>
+            <div class="chat-line system">Dica: use Space para atacar.</div>
+          </div>
+          <div id="chat-input-row">
+            <input id="chat-input" value="Chat desativado nesta build" readonly tabindex="-1" />
+            <button id="chat-lang" type="button">EN</button>
+          </div>
+        </section>
+
+        <section id="interaction-prompt" class="hud-panel" aria-live="polite">
+          <span class="hint-key">E</span>
+          <span id="interaction-prompt-text"></span>
+        </section>
+
+        <section id="action-progress" class="hud-panel" hidden aria-live="polite" data-tone="generic">
+          <div class="action-progress-visual">
+            <div id="action-progress-badge" aria-hidden="true">ACO</div>
+            <div class="action-progress-copy">
+              <div class="action-progress-head">
+                <div id="action-progress-label"></div>
+                <div id="action-progress-percent"></div>
+              </div>
+              <div class="action-progress-bar">
+                <div id="action-progress-fill"></div>
+              </div>
+              <div class="action-progress-foot">
+                <div id="action-progress-detail"></div>
+                <div id="action-progress-hint"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside id="dialogue-box" class="hud-panel" hidden aria-live="polite">
+          <div class="dialogue-head">
+            <div id="dialogue-speaker"></div>
+            <div id="dialogue-step"></div>
+          </div>
+          <div id="dialogue-text"></div>
+          <div class="dialogue-actions">
+            <span class="dialogue-keys">
+              <span class="hint-key">E</span>
+              <span>Continuar</span>
+            </span>
+            <div class="dialogue-buttons">
+              <button id="dialogue-advance" class="dialogue-btn primary" type="button">
+                Continuar
+              </button>
+              <button id="dialogue-close" class="dialogue-btn" type="button">Fechar</button>
+            </div>
+          </div>
+        </aside>
+
+        <aside id="death-modal" class="hud-panel" hidden aria-live="assertive">
+          <div class="death-title">Voce Morreu</div>
+          <div id="death-modal-text">
+            Voce foi derrotado. Clique em respawn para voltar ao vilarejo.
+          </div>
+          <button id="death-respawn" type="button">Respawn</button>
+        </aside>
+
+        <aside id="crafting-panel" class="hud-panel" hidden aria-live="polite">
+          <div class="crafting-head">
+            <div>
+              <div class="crafting-title">Crafting</div>
+              <div id="crafting-status">Selecione uma receita para comecar.</div>
+            </div>
+            <div class="crafting-head-actions">
+              <span class="hint-key">C</span>
+              <button id="crafting-close" type="button">Fechar</button>
+            </div>
+          </div>
+          <div class="crafting-body">
+            <div id="crafting-recipe-list"></div>
+            <div class="crafting-detail">
+              <div id="crafting-recipe-name">Nenhuma receita</div>
+              <div id="crafting-recipe-meta"></div>
+              <div id="crafting-output">Selecione uma receita para ver os detalhes.</div>
+              <div id="crafting-materials"></div>
+              <button id="crafting-submit" type="button">Craftar</button>
+            </div>
+          </div>
+        </aside>
+
+        <section id="hud-hotbar" class="hud-panel" aria-label="Skill bar">
+          <div class="slot active">1</div>
+          <div class="slot">2</div>
+          <div class="slot">3</div>
+          <div class="slot">4</div>
+          <div class="slot">5</div>
+          <div class="slot">6</div>
+          <div class="slot">7</div>
+          <div class="slot">8</div>
+        </section>
+
+        <aside id="settings-modal" class="hud-panel" hidden>
+          <h3 class="cfg-title">Configurações</h3>
+          <label class="cfg-row" for="cfg-hud-scale">
+            Escala da HUD
+            <input id="cfg-hud-scale" type="range" min="0.6" max="1" step="0.02" value="0.78" />
+          </label>
+          <label class="cfg-row" for="cfg-hud-opacity">
+            Opacidade da HUD
+            <input id="cfg-hud-opacity" type="range" min="0.7" max="1" step="0.02" value="0.94" />
+          </label>
+          <label class="cfg-check" for="cfg-show-chat">
+            <input id="cfg-show-chat" type="checkbox" checked /> Exibir chat
+          </label>
+          <label class="cfg-check" for="cfg-show-right">
+            <input id="cfg-show-right" type="checkbox" checked /> Exibir painel lateral
+          </label>
+          <label class="cfg-check" for="cfg-show-hotbar">
+            <input id="cfg-show-hotbar" type="checkbox" checked /> Exibir hotbar
+          </label>
+          <button id="settings-close" type="button">Fechar</button>
+        </aside>
+
+        <div id="item-tooltip" class="item-tooltip" hidden aria-hidden="true">
+          <div id="item-tooltip-title" class="item-tooltip-title"></div>
+          <div id="item-tooltip-meta" class="item-tooltip-meta"></div>
+          <div id="item-tooltip-description" class="item-tooltip-description"></div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,182 @@
+# Full stack: Postgres, Redis, migrations, all Node services, gateway.
+# From repo root (where .env lives):
+#   docker compose up --build
+#
+# First time: copy .env.example to .env and set JWT_SECRET (and optional overrides).
+
+name: myth-rune
+
+x-app-env: &app-env
+  NODE_ENV: production
+  DATABASE_URL: postgresql://${POSTGRES_USER:-myth}:${POSTGRES_PASSWORD:-myth_dev}@postgres:5432/${POSTGRES_DB:-myth_rune}
+  REDIS_URL: redis://redis:6379
+  JWT_SECRET: ${JWT_SECRET:-dev-docker-stack-change-me-in-production}
+  JWT_EXPIRES_SECONDS: ${JWT_EXPIRES_SECONDS:-3600}
+
+x-login-build: &login-build
+  context: .
+  dockerfile: login-server/Dockerfile
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-myth}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-myth_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-myth_rune}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - myth_rune_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-myth} -d ${POSTGRES_DB:-myth_rune}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # No host port: app services use redis://redis:6379 on the Docker network only.
+  # Avoids clashing with another Redis already bound to localhost:6379.
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - myth_rune_redis:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    image: myth-rune-login-server:${IMAGE_TAG:-local}
+    build: *login-build
+    working_dir: /app/login-server
+    command: ["node", "dist/migrate.js"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-myth}:${POSTGRES_PASSWORD:-myth_dev}@postgres:5432/${POSTGRES_DB:-myth_rune}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # No host ports: use gateway only (http://localhost:3000). Avoids clashing with local npm dev on 3001–3003.
+  login-server:
+    image: myth-rune-login-server:${IMAGE_TAG:-local}
+    build: *login-build
+    working_dir: /app/login-server
+    command: ["node", "dist/index.js"]
+    environment:
+      <<: *app-env
+      LOGIN_SERVER_PORT: "3001"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  world-server:
+    build:
+      context: .
+      dockerfile: world-server/Dockerfile
+    image: myth-rune-world-server:${IMAGE_TAG:-local}
+    working_dir: /app/world-server
+    command: ["node", "dist/index.js"]
+    environment:
+      <<: *app-env
+      WORLD_SERVER_PORT: "3002"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3002/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  combat-server:
+    build:
+      context: .
+      dockerfile: combat-server/Dockerfile
+    image: myth-rune-combat-server:${IMAGE_TAG:-local}
+    working_dir: /app/combat-server
+    command: ["node", "dist/index.js"]
+    environment:
+      <<: *app-env
+      COMBAT_SERVER_PORT: "3003"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3003/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    image: myth-rune-gateway:${IMAGE_TAG:-local}
+    working_dir: /app/gateway
+    command: ["node", "dist/index.js"]
+    environment:
+      NODE_ENV: production
+      GATEWAY_PORT: "3000"
+      LOGIN_SERVER_URL: http://login-server:3001
+      WORLD_SERVER_URL: http://world-server:3002
+      COMBAT_SERVER_URL: http://combat-server:3003
+    ports:
+      - "${GATEWAY_PORT:-3000}:3000"
+    depends_on:
+      login-server:
+        condition: service_healthy
+      world-server:
+        condition: service_healthy
+      combat-server:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+volumes:
+  myth_rune_pg:
+  myth_rune_redis:

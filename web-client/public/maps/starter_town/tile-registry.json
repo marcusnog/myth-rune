@@ -1,0 +1,119 @@
+{
+  "tileset": {
+    "name": "tiles",
+    "image": "tileset.png",
+    "tileWidth": 32,
+    "tileHeight": 32,
+    "columns": 16,
+    "rows": 11,
+    "engineSafeTilecount": 168,
+    "audit": {
+      "activeHybridBuilder": "tools/process_04_sources.js",
+      "safeHybridTerrainGidRange": [1, 23],
+      "legacyHybridWarning": "The active tileset hybrid only replaces the first terrain block and leaves the legacy structure/prop area from the older atlas.",
+      "legacyUnsafeStructureRange": [104, 165]
+    }
+  },
+  "terrain": {
+    "grassBase": [1],
+    "grassVariation": [2, 3, 4],
+    "wildGrassBase": [5],
+    "wildGrassVariation": [6, 7, 8],
+    "dirt": [9, 10, 11, 12],
+    "path": [13, 14, 15, 16],
+    "forestBase": [17],
+    "forestVariation": [18, 19, 20],
+    "water": [21, 22, 23],
+    "sand": []
+  },
+  "transitions": {
+    "grassToWild": [24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43],
+    "grassToDirt": [44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63],
+    "grassToSand": [],
+    "dirtToPath": [64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83],
+    "wildToForest": [84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103],
+    "waterEdge": []
+  },
+  "structures": {
+    "houseFloors": [],
+    "houseWalls": [],
+    "houseRoofs": [],
+    "caveEntrances": [],
+    "runtimeFrames": [
+      "house_wood_small_straw_a",
+      "house_wood_medium_brown_a",
+      "house_wood_small_tan_a",
+      "cave_entrance_mossy_a",
+      "well_stone_wood_a"
+    ]
+  },
+  "props": {
+    "lamps": [],
+    "crates": [],
+    "barrels": [],
+    "signs": [],
+    "runtimeFrames": {
+      "lamps": ["torch_standing_a", "torch_standing_b", "lantern_hanging_a"],
+      "crates": ["crate_single_a", "crates_stacked_double_a"],
+      "barrels": ["barrel_large_a", "barrel_small_a"],
+      "signs": ["hanging_sign_small_a", "signpost_standing_a", "notice_board_small_a"],
+      "benches": ["bench_wood_a"],
+      "fences": ["fence_straight_long_a", "fence_straight_short_a", "fence_diagonal_right_a"],
+      "smithing": ["anvil_small_a", "weapon_rack_sword_a", "forge_clutter_station_a"]
+    }
+  },
+  "resources": {
+    "trees": [],
+    "ores": [],
+    "rocks": [],
+    "runtimeFrames": {
+      "oak_tree": ["oak_tree_resource_a", "oak_tree_resource_b"],
+      "pine_tree": ["pine_tree_resource_a"],
+      "stone_deposit": ["stone_deposit_resource_a"]
+    }
+  },
+  "blocked": {
+    "rocks": [],
+    "trees": [],
+    "runtimeFrames": ["cave_entrance_mossy_a"]
+  },
+  "collision": {
+    "full": [166],
+    "half": [167],
+    "water": [168]
+  },
+  "forbidden": {
+    "debug": [],
+    "ui": [],
+    "text": [152, 153, 154],
+    "atlasLabels": [],
+    "placeholder": [],
+    "internalOnly": [
+      104, 105, 106, 107, 108, 109, 110, 111,
+      112, 113, 114, 115, 116, 117, 118, 119,
+      120, 121, 122, 123, 124, 125, 126, 127,
+      128, 129, 130, 131, 132, 133, 134, 135,
+      136, 137, 138, 139, 140, 141, 142, 143,
+      144, 145, 146, 147, 148, 149, 150, 151,
+      152, 153, 154, 155, 156, 157, 158, 159,
+      160, 161, 162, 163, 164, 165
+    ],
+    "transparentTail": [169, 170, 171, 172, 173, 174, 175, 176]
+  },
+  "layerRules": {
+    "ground": ["terrain.grassBase", "terrain.wildGrassBase", "terrain.forestBase"],
+    "ground_variation": ["terrain.grassVariation", "terrain.wildGrassVariation", "terrain.forestVariation"],
+    "paths": ["terrain.dirt", "terrain.path"],
+    "water": ["terrain.water"],
+    "transitions": [
+      "transitions.grassToWild",
+      "transitions.grassToDirt",
+      "transitions.dirtToPath",
+      "transitions.wildToForest"
+    ],
+    "structures": [],
+    "props": [],
+    "collision": ["collision.full", "collision.half", "collision.water"],
+    "above_player": []
+  }
+}

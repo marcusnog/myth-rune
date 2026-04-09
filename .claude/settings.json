@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \":*)",
+      "Bash(del \"c:\\\\Users\\\\NITRO V\\\\Documents\\\\myth-rune\\\\client\\\\assets\\\\sprites\\\\mobs\\\\goblin\\\\goblin_sprite_sheet.png.import\")",
+      "Read(//c/Users/NITRO V/Downloads/**)",
+      "Bash(rm \"c:\\\\Users\\\\NITRO V\\\\Documents\\\\myth-rune\\\\client\\\\assets\\\\sprites\\\\mobs\\\\goblin\\\\goblin_sprite_sheet.png.import\")",
+      "Bash(rm \"c:\\\\Users\\\\NITRO V\\\\Documents\\\\myth-rune\\\\client\\\\.godot\\\\imported\\\\goblin_sprite_sheet.png-45659f2dbc5cb7ec6090b7f2831fde50.ctex\")",
+      "Bash(rm \"c:\\\\Users\\\\NITRO V\\\\Documents\\\\myth-rune\\\\client\\\\.godot\\\\imported\\\\goblin_sprite_sheet.png-45659f2dbc5cb7ec6090b7f2831fde50.md5\")",
+      "Bash(GOBLIN_DIR=\"c:/Users/NITRO V/Documents/myth-rune/client/assets/sprites/mobs/goblin\")",
+      "Bash(CACHE_DIR=\"c:/Users/NITRO V/Documents/myth-rune/client/.godot/imported\")",
+      "Bash(rm -f \"$GOBLIN_DIR/goblin_sprite_sheet.png.import\")",
+      "Bash(rm -f \"$CACHE_DIR/goblin_sprite_sheet.png-45659f2dbc5cb7ec6090b7f2831fde50.ctex\")",
+      "Bash(rm -f \"$CACHE_DIR/goblin_sprite_sheet.png-45659f2dbc5cb7ec6090b7f2831fde50.md5\")",
+      "Bash(GOBLIN_DIR=\"c:/Users/NITRO V/Documents/myth-rune/client/assets/sprites/mobs/goblin\" CACHE_DIR=\"c:/Users/NITRO V/Documents/myth-rune/client/.godot/imported\" rm -f \"$GOBLIN_DIR/goblin_sprite_sheet.png.import\" rm -f \"$CACHE_DIR\"/goblin_sprite_sheet.png-*.ctex rm -f \"$CACHE_DIR\"/goblin_sprite_sheet.png-*.md5 echo \"Done. Remaining goblin cache files:\" ls \"$CACHE_DIR\")",
+      "Bash(rm -f \"$CACHE_DIR\"/goblin_sprite_sheet.png-*.ctex)",
+      "Bash(rm -f \"$CACHE_DIR\"/goblin_sprite_sheet.png-*.md5)",
+      "Bash(python tools/normalize_goblin.py)",
+      "Bash(find \"c:\\\\Users\\\\NITRO V\\\\Documents\\\\myth-rune\\\\client\\\\.godot\\\\imported\" -name \"goblin_sprite_sheet*\" -delete)",
+      "Bash(python -c \"from PIL import Image; import numpy; print\\(''PIL OK''\\)\")",
+      "Bash(python tools/normalize_goblin_v2.py)"
+    ]
+  }
+}

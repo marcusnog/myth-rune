@@ -1,0 +1,478 @@
+import Phaser from "phaser";
+import type { ItemId } from "../../data/items";
+import {
+  RESOURCE_NODE_DEFINITIONS,
+  RESOURCE_NODE_TYPES,
+  type ResourceNodeMapConfig,
+  type ResourceNodeType,
+} from "../../data/resources";
+import {
+  assertStarterTownRuntimePropFrameIsSafe,
+  assertStarterTownTilemapIsSafe,
+} from "./TileCategoryGuard";
+
+export const MAP_KEY = "map:starter-town";
+export const MAP_TILESET_IMAGE_KEY = "map:starter-town-tiles";
+export const MAP_TILESET_METADATA_KEY = "map:starter-town-tiles-meta";
+export const MAP_TILESET_NAME = "tiles";
+export const MAP_PROPS_ATLAS_IMAGE_KEY = "map:starter-town-props";
+export const MAP_PROPS_ATLAS_METADATA_KEY = "map:starter-town-props-meta";
+export const MAP_PROPS_LAYOUT_KEY = "map:starter-town-props-layout";
+export const MAP_RESOURCE_ATLAS_IMAGE_KEY = "map:starter-town-resources";
+export const MAP_RESOURCE_ATLAS_METADATA_KEY = "map:starter-town-resources-meta";
+export const MAP_SAFE_CENTER_TILE_X = 64.5;
+export const MAP_SAFE_CENTER_TILE_Y = 64.5;
+export const RESOURCE_OBJECT_LAYER = "resource_nodes";
+export const WORLD_WIDTH = 800;
+export const WORLD_HEIGHT = 600;
+
+const STARTER_TOWN_LAYER_DEPTHS = [
+  ["ground", -100],
+  ["ground_variation", -95],
+  ["water", -92],
+  ["paths", -90],
+  ["transitions", -85],
+  ["structures", -80],
+  ["props", -70],
+  ["above_player", 10000],
+] as const;
+
+interface TilesetMetadataEntry {
+  gid: number;
+  column: number;
+  row: number;
+}
+
+interface TilesetMetadata {
+  tileWidth: number;
+  tileHeight: number;
+  tiles: Record<string, TilesetMetadataEntry>;
+}
+
+interface RuntimePropAtlasEntry {
+  category: string;
+  label: string;
+  confidence: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  notes?: string;
+}
+
+interface RuntimePropAtlasMetadata {
+  image: string;
+  items: Record<string, RuntimePropAtlasEntry>;
+}
+
+interface RuntimePropBlockerSpec {
+  width: number;
+  height: number;
+  offsetX?: number;
+  offsetY?: number;
+}
+
+interface RuntimePropPlacement {
+  id: string;
+  tileX: number;
+  tileY: number;
+  offsetX?: number;
+  offsetY?: number;
+  depthBias?: number;
+  blocker?: RuntimePropBlockerSpec;
+}
+
+interface RuntimePropLayout {
+  placements?: RuntimePropPlacement[];
+}
+
+export interface StarterTownPropBlocker {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+export interface AnimatedTileGroup {
+  frameIndices: readonly number[];
+  frameDurationMs: number;
+  tiles: readonly Phaser.Tilemaps.Tile[];
+}
+
+export interface StarterTownWorld {
+  tilemap: Phaser.Tilemaps.Tilemap;
+  collisionLayer: Phaser.Tilemaps.TilemapLayer | null;
+  worldMinX: number;
+  worldMinY: number;
+  worldMaxX: number;
+  worldMaxY: number;
+  worldWidth: number;
+  worldHeight: number;
+  /** Largura de um tile em pixels. */
+  tileWidth: number;
+  /** Altura de um tile em pixels. Pode diferir de tileWidth em tilesets não-quadrados. */
+  tileHeight: number;
+  resourceNodes: ResourceNodeMapConfig[];
+  propSprites: readonly Phaser.GameObjects.Image[];
+  propBlockers: readonly StarterTownPropBlocker[];
+  animatedTileGroups: readonly AnimatedTileGroup[];
+}
+
+interface RawProperty {
+  name?: string;
+  value?: unknown;
+}
+
+interface RawObjectLayerObject {
+  name?: string;
+  x?: number;
+  y?: number;
+  properties?: RawProperty[];
+}
+
+function readProperty(
+  properties: readonly RawProperty[] | undefined,
+  name: string,
+): unknown {
+  return properties?.find((property) => property.name === name)?.value;
+}
+
+function asNumber(value: unknown, fallback: number): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number.parseFloat(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return fallback;
+}
+
+function asItemId(value: unknown): ItemId | undefined {
+  return typeof value === "string" ? (value as ItemId) : undefined;
+}
+
+function asInt(value: unknown, fallback: number): number {
+  return Math.floor(asNumber(value, fallback));
+}
+
+function resolveMapCenterTile(tilemap: Phaser.Tilemaps.Tilemap): {
+  centerX: number;
+  centerY: number;
+} {
+  const props = Array.isArray(tilemap.properties)
+    ? (tilemap.properties as RawProperty[])
+    : [];
+  const safeCenterRaw = props.find((prop) => prop.name === "safeZoneCenter")?.value;
+  if (typeof safeCenterRaw === "string") {
+    const [xRaw, yRaw] = safeCenterRaw.split(",");
+    const x = Number.parseFloat(xRaw);
+    const y = Number.parseFloat(yRaw);
+    if (Number.isFinite(x) && Number.isFinite(y)) {
+      return { centerX: x + 0.5, centerY: y + 0.5 };
+    }
+  }
+  return { centerX: MAP_SAFE_CENTER_TILE_X, centerY: MAP_SAFE_CENTER_TILE_Y };
+}
+
+function parseResourceObjects(tilemap: Phaser.Tilemaps.Tilemap): ResourceNodeMapConfig[] {
+  const layer = tilemap.getObjectLayer(RESOURCE_OBJECT_LAYER);
+  if (!layer?.objects) {
+    return [];
+  }
+
+  const tileWidth = tilemap.tileWidth || 32;
+  const tileHeight = tilemap.tileHeight || 32;
+  const result: ResourceNodeMapConfig[] = [];
+  for (const raw of layer.objects as RawObjectLayerObject[]) {
+    const typeRaw =
+      readProperty(raw.properties, "nodeType") ?? readProperty(raw.properties, "type");
+    if (typeof typeRaw !== "string" || !RESOURCE_NODE_TYPES.includes(typeRaw as ResourceNodeType)) {
+      continue;
+    }
+
+    const definition = RESOURCE_NODE_DEFINITIONS[typeRaw as ResourceNodeType];
+    const tileX = asInt(
+      readProperty(raw.properties, "tileX"),
+      Math.floor((raw.x ?? 0) / tileWidth),
+    );
+    const tileY = asInt(
+      readProperty(raw.properties, "tileY"),
+      Math.floor((raw.y ?? 0) / tileHeight),
+    );
+    result.push({
+      nodeId:
+        (typeof readProperty(raw.properties, "nodeId") === "string"
+          ? (readProperty(raw.properties, "nodeId") as string)
+          : raw.name) ?? `${typeRaw}:${tileX}:${tileY}`,
+      type: typeRaw as ResourceNodeType,
+      tileX,
+      tileY,
+      quantity: Math.max(
+        1,
+        Math.floor(
+          asNumber(readProperty(raw.properties, "quantity"), definition.defaultQuantity),
+        ),
+      ),
+      gatherTimeMs: Math.max(
+        250,
+        Math.floor(
+          asNumber(readProperty(raw.properties, "gatherTimeMs"), definition.defaultGatherTimeMs),
+        ),
+      ),
+      respawnTimeMs: Math.max(
+        500,
+        Math.floor(
+          asNumber(readProperty(raw.properties, "respawnTimeMs"), definition.defaultRespawnTimeMs),
+        ),
+      ),
+      yieldItemId: asItemId(readProperty(raw.properties, "yieldItemId")),
+      yieldAmount: Math.max(
+        1,
+        Math.floor(asNumber(readProperty(raw.properties, "yieldAmount"), definition.yieldAmount)),
+      ),
+    });
+  }
+
+  return result;
+}
+
+export function preloadStarterTownAssets(scene: Phaser.Scene): void {
+  scene.load.tilemapTiledJSON(MAP_KEY, "/maps/starter_town/map.json");
+  scene.load.image(MAP_TILESET_IMAGE_KEY, "/maps/starter_town/tileset.png");
+  scene.load.json(MAP_TILESET_METADATA_KEY, "/maps/starter_town/tileset-phaser-metadata.json");
+  scene.load.image(MAP_PROPS_ATLAS_IMAGE_KEY, "/maps/starter_town/runtime_props/atlas.png");
+  scene.load.json(MAP_PROPS_ATLAS_METADATA_KEY, "/maps/starter_town/runtime_props/atlas.json");
+  scene.load.json(MAP_PROPS_LAYOUT_KEY, "/maps/starter_town/runtime_props/layout.json");
+  scene.load.image(MAP_RESOURCE_ATLAS_IMAGE_KEY, "/maps/starter_town/runtime_resources/atlas.png");
+  scene.load.json(MAP_RESOURCE_ATLAS_METADATA_KEY, "/maps/starter_town/runtime_resources/atlas.json");
+}
+
+export function ensureStarterTownTileFrames(scene: Phaser.Scene): void {
+  const metadata = scene.cache.json.get(MAP_TILESET_METADATA_KEY) as TilesetMetadata | undefined;
+  if (!metadata) {
+    throw new Error("Tileset metadata de starter_town nao encontrado.");
+  }
+  const texture = scene.textures.get(MAP_TILESET_IMAGE_KEY);
+  if (!texture) {
+    throw new Error("Tileset texture de starter_town nao encontrado.");
+  }
+
+  for (const [frameName, entry] of Object.entries(metadata.tiles)) {
+    if (texture.has(frameName)) {
+      continue;
+    }
+    texture.add(
+      frameName,
+      0,
+      entry.column * metadata.tileWidth,
+      entry.row * metadata.tileHeight,
+      metadata.tileWidth,
+      metadata.tileHeight,
+    );
+  }
+}
+
+export function ensureStarterTownPropFrames(scene: Phaser.Scene): void {
+  const metadata = scene.cache.json.get(MAP_PROPS_ATLAS_METADATA_KEY) as
+    | RuntimePropAtlasMetadata
+    | undefined;
+  if (!metadata?.items) {
+    return;
+  }
+  const texture = scene.textures.get(MAP_PROPS_ATLAS_IMAGE_KEY);
+  if (!texture) {
+    return;
+  }
+
+  for (const [frameName, entry] of Object.entries(metadata.items)) {
+    if (texture.has(frameName)) {
+      continue;
+    }
+    texture.add(frameName, 0, entry.x, entry.y, entry.width, entry.height);
+  }
+}
+
+export function ensureStarterTownResourceFrames(scene: Phaser.Scene): void {
+  const metadata = scene.cache.json.get(MAP_RESOURCE_ATLAS_METADATA_KEY) as
+    | RuntimePropAtlasMetadata
+    | undefined;
+  if (!metadata?.items) {
+    return;
+  }
+  const texture = scene.textures.get(MAP_RESOURCE_ATLAS_IMAGE_KEY);
+  if (!texture) {
+    return;
+  }
+
+  for (const [frameName, entry] of Object.entries(metadata.items)) {
+    if (texture.has(frameName)) {
+      continue;
+    }
+    texture.add(frameName, 0, entry.x, entry.y, entry.width, entry.height);
+  }
+}
+
+function getTilesetMetadata(scene: Phaser.Scene): TilesetMetadata | null {
+  return (scene.cache.json.get(MAP_TILESET_METADATA_KEY) as TilesetMetadata | undefined) ?? null;
+}
+
+function resolveAnimatedWaterFrameIndices(scene: Phaser.Scene): readonly number[] {
+  const metadata = getTilesetMetadata(scene);
+  if (!metadata) {
+    return [21, 22, 23];
+  }
+  const indices = ["water_0", "water_1", "water_2"]
+    .map((name) => metadata.tiles[name]?.gid)
+    .filter((gid): gid is number => typeof gid === "number" && gid > 0);
+  return indices.length === 3 ? indices : [21, 22, 23];
+}
+
+function buildRuntimePropSprites(
+  scene: Phaser.Scene,
+  tileWidth: number,
+  tileHeight: number,
+  worldMinX: number,
+  worldMinY: number,
+): {
+  propSprites: Phaser.GameObjects.Image[];
+  propBlockers: StarterTownPropBlocker[];
+} {
+  const atlas = scene.cache.json.get(MAP_PROPS_ATLAS_METADATA_KEY) as
+    | RuntimePropAtlasMetadata
+    | undefined;
+  const layout = scene.cache.json.get(MAP_PROPS_LAYOUT_KEY) as RuntimePropLayout | undefined;
+
+  if (!atlas?.items || !Array.isArray(layout?.placements)) {
+    return { propSprites: [], propBlockers: [] };
+  }
+
+  ensureStarterTownPropFrames(scene);
+
+  const propSprites: Phaser.GameObjects.Image[] = [];
+  const propBlockers: StarterTownPropBlocker[] = [];
+
+  for (const placement of layout.placements) {
+    const frame = atlas.items[placement.id];
+    if (!frame) {
+      continue;
+    }
+    assertStarterTownRuntimePropFrameIsSafe(placement.id);
+
+    const worldX =
+      worldMinX + placement.tileX * tileWidth + tileWidth / 2 + (placement.offsetX ?? 0);
+    const worldY =
+      worldMinY + (placement.tileY + 1) * tileHeight + (placement.offsetY ?? 0);
+
+    const sprite = scene.add
+      .image(worldX, worldY, MAP_PROPS_ATLAS_IMAGE_KEY, placement.id)
+      .setOrigin(0.5, 1)
+      .setDepth(worldY - worldMinY + (placement.depthBias ?? 0.5));
+
+    propSprites.push(sprite);
+
+    if (placement.blocker) {
+      const blockerCenterX = worldX + (placement.blocker.offsetX ?? 0);
+      const blockerBottomY = worldY + (placement.blocker.offsetY ?? 0);
+      propBlockers.push({
+        left: blockerCenterX - placement.blocker.width / 2,
+        right: blockerCenterX + placement.blocker.width / 2,
+        top: blockerBottomY - placement.blocker.height,
+        bottom: blockerBottomY,
+      });
+    }
+  }
+
+  return { propSprites, propBlockers };
+}
+
+export function buildStarterTownWorld(scene: Phaser.Scene): StarterTownWorld {
+  const tilemap = scene.make.tilemap({ key: MAP_KEY });
+  const tileset = tilemap.addTilesetImage(MAP_TILESET_NAME, MAP_TILESET_IMAGE_KEY);
+  if (!tileset) {
+    throw new Error("Tileset 'tiles' nao encontrado no map.json.");
+  }
+  assertStarterTownTilemapIsSafe(tilemap);
+
+  const { centerX, centerY } = resolveMapCenterTile(tilemap);
+  const centerWorldX = centerX * tilemap.tileWidth;
+  const centerWorldY = centerY * tilemap.tileHeight;
+  const mapOffsetX = WORLD_WIDTH / 2 - centerWorldX;
+  const mapOffsetY = WORLD_HEIGHT / 2 - centerWorldY;
+
+  const addLayer = (name: string, depth: number): Phaser.Tilemaps.TilemapLayer | null => {
+    const layer = tilemap.createLayer(name, tileset, mapOffsetX, mapOffsetY);
+    layer?.setDepth(depth);
+    return layer;
+  };
+
+  const renderLayers: Phaser.Tilemaps.TilemapLayer[] = [];
+  for (const [layerName, depth] of STARTER_TOWN_LAYER_DEPTHS) {
+    const layer = addLayer(layerName, depth);
+    if (layer) {
+      renderLayers.push(layer);
+    }
+  }
+
+  const collisionLayer = addLayer("collision", 9950);
+  collisionLayer?.setVisible(false);
+  collisionLayer?.setCollisionByExclusion([-1, 0]);
+
+  const waterFrameIndices = resolveAnimatedWaterFrameIndices(scene);
+  const waterFrameSet = new Set(waterFrameIndices);
+  const animatedWaterTiles: Phaser.Tilemaps.Tile[] = [];
+  for (const layer of renderLayers) {
+    layer.forEachTile((tile) => {
+      if (waterFrameSet.has(tile.index)) {
+        animatedWaterTiles.push(tile);
+      }
+    });
+  }
+
+  const { propSprites, propBlockers } = buildRuntimePropSprites(
+    scene,
+    tilemap.tileWidth,
+    tilemap.tileHeight,
+    mapOffsetX,
+    mapOffsetY,
+  );
+
+  return {
+    tilemap,
+    collisionLayer,
+    worldMinX: mapOffsetX,
+    worldMinY: mapOffsetY,
+    worldWidth: tilemap.widthInPixels,
+    worldHeight: tilemap.heightInPixels,
+    worldMaxX: mapOffsetX + tilemap.widthInPixels,
+    worldMaxY: mapOffsetY + tilemap.heightInPixels,
+    tileWidth: tilemap.tileWidth,
+    tileHeight: tilemap.tileHeight,
+    resourceNodes: parseResourceObjects(tilemap),
+    propSprites,
+    propBlockers,
+    animatedTileGroups:
+      animatedWaterTiles.length > 0
+        ? [
+            {
+              frameIndices: waterFrameIndices,
+              frameDurationMs: 220,
+              tiles: animatedWaterTiles,
+            },
+          ]
+        : [],
+  };
+}
+
+export function tileToWorldPosition(
+  world: Pick<StarterTownWorld, "tileWidth" | "tileHeight" | "worldMinX" | "worldMinY">,
+  tileX: number,
+  tileY: number,
+): { x: number; y: number } {
+  return {
+    x: world.worldMinX + tileX * world.tileWidth + world.tileWidth / 2,
+    y: world.worldMinY + (tileY + 1) * world.tileHeight - 2,
+  };
+}

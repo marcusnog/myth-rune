@@ -1,0 +1,27 @@
+---
+description: Myth of Rune — TypeScript backend, Zod, gateway, Redis/Postgres
+globs: "{shared,gateway,login-server,world-server,combat-server}/**/*"
+alwaysApply: false
+---
+
+# Backend / TypeScript (Myth of Rune)
+
+## Contracts
+
+- **`shared/src/schemas/`** is the single source of truth for client–server shapes. Do not duplicate types in services; build/import from **`shared/dist`**.
+- Validate WebSocket payloads with the matching **Zod** schema in world-server (and other consumers) before handling.
+
+## Infrastructure
+
+- **Postgres**: durable accounts/characters.
+- **Redis**: ephemeral world state, pub/sub patterns as implemented in each service.
+
+## Gateway
+
+- New HTTP surface goes through **gateway** — do not expose login/world servers directly to the client.
+- **Aliases**: `/login` and `/register` already rewrite to `/auth/*` — do not add redundant routes for the same behavior.
+
+## Quality
+
+- Read full files before editing; keep changes scoped to the feature.
+- Atomic commits per feature/fix; messages in English: `type(scope): description`.

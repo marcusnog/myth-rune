@@ -1,0 +1,348 @@
+{
+  "board": {
+    "width": 2600,
+    "height": 1900
+  },
+  "slots": [
+    {
+      "id": "main_map_preview",
+      "source": "web-client/public/maps/starter_town/preview_nanobanana_test.png",
+      "panel": {
+        "x": 40,
+        "y": 40,
+        "width": 1500,
+        "height": 1500
+      },
+      "placed": {
+        "x": 52,
+        "y": 52,
+        "width": 1476,
+        "height": 1476
+      },
+      "sourceSize": {
+        "width": 1024,
+        "height": 1024
+      }
+    },
+    {
+      "id": "terrain_hybrid_04",
+      "source": "web-client/public/maps/starter_town/nanobanana_04/tileset_04_safe_hybrid.png",
+      "panel": {
+        "x": 1580,
+        "y": 40,
+        "width": 470,
+        "height": 300
+      },
+      "placed": {
+        "x": 1614,
+        "y": 52,
+        "width": 401,
+        "height": 276
+      },
+      "sourceSize": {
+        "width": 512,
+        "height": 352
+      }
+    },
+    {
+      "id": "props_atlas_04",
+      "source": "web-client/public/maps/starter_town/nanobanana_04/props_buildings_atlas.png",
+      "panel": {
+        "x": 2090,
+        "y": 40,
+        "width": 470,
+        "height": 300
+      },
+      "placed": {
+        "x": 2141,
+        "y": 52,
+        "width": 368,
+        "height": 276
+      },
+      "sourceSize": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "id": "trees_foliage_02",
+      "source": "web-client/public/maps/starter_town/reference_boards/02_blocks/trees_foliage_sheet.png",
+      "panel": {
+        "x": 1580,
+        "y": 380,
+        "width": 470,
+        "height": 250
+      },
+      "placed": {
+        "x": 1665,
+        "y": 392,
+        "width": 299,
+        "height": 226
+      },
+      "sourceSize": {
+        "width": 135,
+        "height": 102
+      }
+    },
+    {
+      "id": "resources_02",
+      "source": "web-client/public/maps/starter_town/reference_boards/02_blocks/rocks_resources_sheet.png",
+      "panel": {
+        "x": 2090,
+        "y": 380,
+        "width": 470,
+        "height": 250
+      },
+      "placed": {
+        "x": 2120,
+        "y": 392,
+        "width": 409,
+        "height": 226
+      },
+      "sourceSize": {
+        "width": 134,
+        "height": 74
+      }
+    },
+    {
+      "id": "props_atlas_03",
+      "source": "web-client/public/maps/starter_town/nanobanana_03/props_buildings_atlas.png",
+      "panel": {
+        "x": 1580,
+        "y": 670,
+        "width": 470,
+        "height": 250
+      },
+      "placed": {
+        "x": 1664,
+        "y": 682,
+        "width": 301,
+        "height": 226
+      },
+      "sourceSize": {
+        "width": 1024,
+        "height": 768
+      }
+    },
+    {
+      "id": "terrain_hybrid_01",
+      "source": "web-client/public/maps/starter_town/tileset_01_safe_hybrid.png",
+      "panel": {
+        "x": 2090,
+        "y": 670,
+        "width": 470,
+        "height": 250
+      },
+      "placed": {
+        "x": 2161,
+        "y": 682,
+        "width": 328,
+        "height": 226
+      },
+      "sourceSize": {
+        "width": 512,
+        "height": 352
+      }
+    },
+    {
+      "id": "terrain_source_04",
+      "source": "web-client/public/maps/starter_town/nanobanana_04/terrain_source.png",
+      "panel": {
+        "x": 1580,
+        "y": 960,
+        "width": 470,
+        "height": 250
+      },
+      "placed": {
+        "x": 1592,
+        "y": 1013,
+        "width": 446,
+        "height": 144
+      },
+      "sourceSize": {
+        "width": 600,
+        "height": 194
+      }
+    },
+    {
+      "id": "props_source_04",
+      "source": "web-client/public/maps/starter_town/nanobanana_04/props_source.png",
+      "panel": {
+        "x": 2090,
+        "y": 960,
+        "width": 470,
+        "height": 250
+      },
+      "placed": {
+        "x": 2102,
+        "y": 1012,
+        "width": 446,
+        "height": 145
+      },
+      "sourceSize": {
+        "width": 590,
+        "height": 192
+      }
+    },
+    {
+      "id": "source_mros",
+      "source": "Gemini_Generated_Image_mrosl5mrosl5mros.png",
+      "panel": {
+        "x": 40,
+        "y": 1590,
+        "width": 290,
+        "height": 250
+      },
+      "placed": {
+        "x": 52,
+        "y": 1642,
+        "width": 266,
+        "height": 145
+      },
+      "sourceSize": {
+        "width": 2816,
+        "height": 1536
+      }
+    },
+    {
+      "id": "source_k1fk",
+      "source": "Gemini_Generated_Image_k1fk25k1fk25k1fk-removebg-preview.png",
+      "panel": {
+        "x": 350,
+        "y": 1590,
+        "width": 290,
+        "height": 250
+      },
+      "placed": {
+        "x": 362,
+        "y": 1643,
+        "width": 266,
+        "height": 144
+      },
+      "sourceSize": {
+        "width": 677,
+        "height": 369
+      }
+    },
+    {
+      "id": "source_qthq",
+      "source": "Gemini_Generated_Image_qthqiyqthqiyqthq-removebg-preview.png",
+      "panel": {
+        "x": 660,
+        "y": 1590,
+        "width": 290,
+        "height": 250
+      },
+      "placed": {
+        "x": 672,
+        "y": 1643,
+        "width": 266,
+        "height": 144
+      },
+      "sourceSize": {
+        "width": 677,
+        "height": 369
+      }
+    },
+    {
+      "id": "source_chatgpt_board",
+      "source": "ChatGPT Image 9 de abr. de 2026, 01_39_34.png",
+      "panel": {
+        "x": 970,
+        "y": 1590,
+        "width": 290,
+        "height": 250
+      },
+      "placed": {
+        "x": 1040,
+        "y": 1602,
+        "width": 150,
+        "height": 226
+      },
+      "sourceSize": {
+        "width": 1024,
+        "height": 1536
+      }
+    },
+    {
+      "id": "source_01",
+      "source": "01.png",
+      "panel": {
+        "x": 1280,
+        "y": 1590,
+        "width": 290,
+        "height": 250
+      },
+      "placed": {
+        "x": 1292,
+        "y": 1626,
+        "width": 266,
+        "height": 177
+      },
+      "sourceSize": {
+        "width": 612,
+        "height": 408
+      }
+    },
+    {
+      "id": "source_02",
+      "source": "02.png",
+      "panel": {
+        "x": 1590,
+        "y": 1590,
+        "width": 290,
+        "height": 250
+      },
+      "placed": {
+        "x": 1602,
+        "y": 1625,
+        "width": 266,
+        "height": 180
+      },
+      "sourceSize": {
+        "width": 606,
+        "height": 412
+      }
+    },
+    {
+      "id": "source_03",
+      "source": "03.png",
+      "panel": {
+        "x": 1900,
+        "y": 1590,
+        "width": 290,
+        "height": 250
+      },
+      "placed": {
+        "x": 1912,
+        "y": 1626,
+        "width": 266,
+        "height": 177
+      },
+      "sourceSize": {
+        "width": 612,
+        "height": 408
+      }
+    },
+    {
+      "id": "source_04",
+      "source": "04.png",
+      "panel": {
+        "x": 2210,
+        "y": 1590,
+        "width": 290,
+        "height": 250
+      },
+      "placed": {
+        "x": 2222,
+        "y": 1626,
+        "width": 266,
+        "height": 177
+      },
+      "sourceSize": {
+        "width": 612,
+        "height": 408
+      }
+    }
+  ]
+}

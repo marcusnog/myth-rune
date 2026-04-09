@@ -1,0 +1,38 @@
+{
+  "generatedAt": "2026-04-09T06:43:24.198Z",
+  "image": "atlas.png",
+  "items": {
+    "oak_tree_resource_a": {
+      "category": "tree",
+      "label": "Oak tree resource A",
+      "x": 12,
+      "y": 13,
+      "width": 85,
+      "height": 93
+    },
+    "oak_tree_resource_b": {
+      "category": "tree",
+      "label": "Oak tree resource B",
+      "x": 109,
+      "y": 14,
+      "width": 87,
+      "height": 92
+    },
+    "pine_tree_resource_a": {
+      "category": "tree",
+      "label": "Pine tree resource A",
+      "x": 208,
+      "y": 12,
+      "width": 50,
+      "height": 94
+    },
+    "stone_deposit_resource_a": {
+      "category": "ore",
+      "label": "Stone deposit resource A",
+      "x": 270,
+      "y": 81,
+      "width": 44,
+      "height": 25
+    }
+  }
+}

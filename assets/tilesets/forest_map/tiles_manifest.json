@@ -1,0 +1,20 @@
+{
+  "map_id": "forest_map",
+  "tile_size": { "width": 32, "height": 32 },
+  "perspective": "top_down_slight_isometric",
+  "lighting": "warm_golden_from_above",
+  "expected_files": [
+    "terrain/grass_base.png",
+    "terrain/grass_detail_1.png",
+    "terrain/grass_detail_2.png",
+    "terrain/grass_detail_3.png",
+    "terrain/dirt_path.png",
+    "terrain/water_animated.png",
+    "terrain/tree_large.png",
+    "terrain/tree_small.png",
+    "terrain/rock_large.png",
+    "terrain/rock_small.png",
+    "terrain/fence.png"
+  ],
+  "tiled_map": "forest_map.tmj"
+}

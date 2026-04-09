@@ -1,0 +1,299 @@
+{
+  "generatedAt": "2026-04-09T05:17:52.483Z",
+  "terrainPrimary": [
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/tileset_04_safe_hybrid.png",
+      "output": "terrain/primary/tileset_04_safe_hybrid.png",
+      "note": "Primary terrain candidate based on 04."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/terrain_source.png",
+      "output": "terrain/primary/terrain_source_04.png",
+      "note": "Primary terrain source extracted from 04."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/preview_nanobanana_test.png",
+      "output": "terrain/primary/preview_current_map.png",
+      "note": "Current starter_town preview rendered with the active safe hybrid."
+    }
+  ],
+  "terrainFallback": [
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_03/tileset_03_safe_hybrid.png",
+      "output": "terrain/fallback/tileset_03_safe_hybrid.png",
+      "note": "Fallback terrain candidate from 03."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/tileset_01_safe_hybrid.png",
+      "output": "terrain/fallback/tileset_01_safe_hybrid.png",
+      "note": "Fallback terrain candidate from 01."
+    }
+  ],
+  "terrainReference": [
+    {
+      "source": "web-client/public/maps/starter_town/reference_boards/02_blocks/terrain_overview_top.png",
+      "output": "terrain/reference/terrain_overview_top.png",
+      "note": "Top mixed terrain block with roads, ponds, plazas, forest edge and ground chunks."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/reference_boards/02_blocks/terrain_path_water_left.png",
+      "output": "terrain/reference/terrain_path_water_left.png",
+      "note": "Path and bridge composition reference from the upper-left area."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/reference_boards/02_blocks/terrain_pond_center.png",
+      "output": "terrain/reference/terrain_pond_center.png",
+      "note": "Central pond and shoreline reference block."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/reference_boards/02_blocks/terrain_plaza_center.png",
+      "output": "terrain/reference/terrain_plaza_center.png",
+      "note": "Stone plaza and village-road composition reference."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/reference_boards/02_blocks/terrain_forest_mine_right.png",
+      "output": "terrain/reference/terrain_forest_mine_right.png",
+      "note": "Forest floor and mine/resource composition reference from the upper-right area."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/reference_boards/02_blocks/terrain_ground_variants_bottom.png",
+      "output": "terrain/reference/terrain_ground_variants_bottom.png",
+      "note": "Bottom terrain block with grass, paths, water borders and town-road variants."
+    }
+  ],
+  "propsBuildingsPrimary": [
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/large_prop/asset_001_large_prop.png",
+      "output": "props_buildings/primary/large_prop/04_asset_001_large_prop.png",
+      "note": "Primary candidate from 04 (large_prop, 20x49)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/building/asset_002_building.png",
+      "output": "props_buildings/primary/building/04_asset_002_building.png",
+      "note": "Primary candidate from 04 (building, 83x85)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/building/asset_003_building.png",
+      "output": "props_buildings/primary/building/04_asset_003_building.png",
+      "note": "Primary candidate from 04 (building, 80x79)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/large_prop/asset_004_large_prop.png",
+      "output": "props_buildings/primary/large_prop/04_asset_004_large_prop.png",
+      "note": "Primary candidate from 04 (large_prop, 18x51)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/building/asset_005_building.png",
+      "output": "props_buildings/primary/building/04_asset_005_building.png",
+      "note": "Primary candidate from 04 (building, 93x73)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/building/asset_006_building.png",
+      "output": "props_buildings/primary/building/04_asset_006_building.png",
+      "note": "Primary candidate from 04 (building, 78x78)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/large_prop/asset_007_large_prop.png",
+      "output": "props_buildings/primary/large_prop/04_asset_007_large_prop.png",
+      "note": "Primary candidate from 04 (large_prop, 53x44)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/large_prop/asset_008_large_prop.png",
+      "output": "props_buildings/primary/large_prop/04_asset_008_large_prop.png",
+      "note": "Primary candidate from 04 (large_prop, 57x47)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/large_prop/asset_009_large_prop.png",
+      "output": "props_buildings/primary/large_prop/04_asset_009_large_prop.png",
+      "note": "Primary candidate from 04 (large_prop, 66x22)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/prop/asset_010_prop.png",
+      "output": "props_buildings/primary/prop/04_asset_010_prop.png",
+      "note": "Primary candidate from 04 (prop, 36x32)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/prop/asset_011_prop.png",
+      "output": "props_buildings/primary/prop/04_asset_011_prop.png",
+      "note": "Primary candidate from 04 (prop, 29x35)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/prop/asset_012_prop.png",
+      "output": "props_buildings/primary/prop/04_asset_012_prop.png",
+      "note": "Primary candidate from 04 (prop, 34x35)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/prop/asset_013_prop.png",
+      "output": "props_buildings/primary/prop/04_asset_013_prop.png",
+      "note": "Primary candidate from 04 (prop, 27x26)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/prop/asset_014_prop.png",
+      "output": "props_buildings/primary/prop/04_asset_014_prop.png",
+      "note": "Primary candidate from 04 (prop, 26x28)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/large_prop/asset_017_large_prop.png",
+      "output": "props_buildings/primary/large_prop/04_asset_017_large_prop.png",
+      "note": "Primary candidate from 04 (large_prop, 44x25)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/large_prop/asset_021_large_prop.png",
+      "output": "props_buildings/primary/large_prop/04_asset_021_large_prop.png",
+      "note": "Primary candidate from 04 (large_prop, 18x47)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/prop/asset_022_prop.png",
+      "output": "props_buildings/primary/prop/04_asset_022_prop.png",
+      "note": "Primary candidate from 04 (prop, 27x22)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/building/asset_024_building.png",
+      "output": "props_buildings/primary/building/04_asset_024_building.png",
+      "note": "Primary candidate from 04 (building, 82x76)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/large_prop/asset_025_large_prop.png",
+      "output": "props_buildings/primary/large_prop/04_asset_025_large_prop.png",
+      "note": "Primary candidate from 04 (large_prop, 22x43)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/prop/asset_026_prop.png",
+      "output": "props_buildings/primary/prop/04_asset_026_prop.png",
+      "note": "Primary candidate from 04 (prop, 30x40)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/large_prop/asset_027_large_prop.png",
+      "output": "props_buildings/primary/large_prop/04_asset_027_large_prop.png",
+      "note": "Primary candidate from 04 (large_prop, 44x49)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/prop/asset_028_prop.png",
+      "output": "props_buildings/primary/prop/04_asset_028_prop.png",
+      "note": "Primary candidate from 04 (prop, 30x29)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/prop/asset_029_prop.png",
+      "output": "props_buildings/primary/prop/04_asset_029_prop.png",
+      "note": "Primary candidate from 04 (prop, 19x33)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/large_prop/asset_031_large_prop.png",
+      "output": "props_buildings/primary/large_prop/04_asset_031_large_prop.png",
+      "note": "Primary candidate from 04 (large_prop, 30x67)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/large_prop/asset_032_large_prop.png",
+      "output": "props_buildings/primary/large_prop/04_asset_032_large_prop.png",
+      "note": "Primary candidate from 04 (large_prop, 51x66)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/prop/asset_033_prop.png",
+      "output": "props_buildings/primary/prop/04_asset_033_prop.png",
+      "note": "Primary candidate from 04 (prop, 38x31)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/large_prop/asset_034_large_prop.png",
+      "output": "props_buildings/primary/large_prop/04_asset_034_large_prop.png",
+      "note": "Primary candidate from 04 (large_prop, 14x57)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/large_prop/asset_035_large_prop.png",
+      "output": "props_buildings/primary/large_prop/04_asset_035_large_prop.png",
+      "note": "Primary candidate from 04 (large_prop, 46x57)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/prop/asset_036_prop.png",
+      "output": "props_buildings/primary/prop/04_asset_036_prop.png",
+      "note": "Primary candidate from 04 (prop, 31x35)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/prop/asset_037_prop.png",
+      "output": "props_buildings/primary/prop/04_asset_037_prop.png",
+      "note": "Primary candidate from 04 (prop, 23x27)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/prop/asset_038_prop.png",
+      "output": "props_buildings/primary/prop/04_asset_038_prop.png",
+      "note": "Primary candidate from 04 (prop, 40x23)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/large_prop/asset_039_large_prop.png",
+      "output": "props_buildings/primary/large_prop/04_asset_039_large_prop.png",
+      "note": "Primary candidate from 04 (large_prop, 45x19)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/prop/asset_040_prop.png",
+      "output": "props_buildings/primary/prop/04_asset_040_prop.png",
+      "note": "Primary candidate from 04 (prop, 25x24)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/prop/asset_041_prop.png",
+      "output": "props_buildings/primary/prop/04_asset_041_prop.png",
+      "note": "Primary candidate from 04 (prop, 24x25)."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/extracted/large_prop/asset_043_large_prop.png",
+      "output": "props_buildings/primary/large_prop/04_asset_043_large_prop.png",
+      "note": "Primary candidate from 04 (large_prop, 47x22)."
+    }
+  ],
+  "propsBuildingsFallbackAtlases": [
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_04/props_buildings_atlas.png",
+      "output": "props_buildings/fallback_atlases/props_buildings_atlas_04.png",
+      "note": "Full extracted atlas from 04 kept as reference and fallback."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_03/props_buildings_atlas.png",
+      "output": "props_buildings/fallback_atlases/props_buildings_atlas_03.png",
+      "note": "Full extracted atlas from 03 kept as backup reference."
+    }
+  ],
+  "treesFoliageReference": [
+    {
+      "source": "web-client/public/maps/starter_town/reference_boards/02_blocks/trees_foliage_sheet.png",
+      "output": "trees_foliage/reference/trees_foliage_sheet.png",
+      "note": "Trees and foliage reference group."
+    }
+  ],
+  "resourcesReference": [
+    {
+      "source": "web-client/public/maps/starter_town/reference_boards/02_blocks/rocks_resources_sheet.png",
+      "output": "resources/reference/rocks_resources_sheet.png",
+      "note": "Rocks, ore clusters and cave reference group."
+    }
+  ],
+  "prompts": [
+    {
+      "source": "web-client/public/maps/starter_town/reference_boards/02_blocks/resource_node_prompt_from_02.md",
+      "output": "prompts/resource_node_prompt_from_02.md",
+      "note": "Resource-node prompt derived from 02."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/reference_boards/02_blocks/trees_foliage_prompt_from_02.md",
+      "output": "prompts/trees_foliage_prompt_from_02.md",
+      "note": "Trees and foliage prompt derived from 02."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/terrain_prompt_round3.md",
+      "output": "prompts/terrain_prompt_round3.md",
+      "note": "Current stricter terrain prompt."
+    },
+    {
+      "source": "web-client/public/maps/starter_town/nanobanana_props/prompt_round2.md",
+      "output": "prompts/props_buildings_prompt_round2.md",
+      "note": "Current props/buildings prompt."
+    }
+  ],
+  "selectionSummary": {
+    "primary04": {
+      "selectedCount": 35,
+      "byCategory": {
+        "large_prop": 15,
+        "building": 5,
+        "prop": 15
+      }
+    }
+  }
+}

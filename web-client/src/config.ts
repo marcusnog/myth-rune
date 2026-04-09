@@ -1,0 +1,8 @@
+const DEFAULT_GATEWAY_HTTP_URL = "http://127.0.0.1:3000";
+const DEFAULT_GATEWAY_WS_URL = "ws://127.0.0.1:3000/ws";
+
+export const GATEWAY_HTTP_URL =
+  import.meta.env.VITE_GATEWAY_HTTP_URL ?? DEFAULT_GATEWAY_HTTP_URL;
+
+export const GATEWAY_WS_URL =
+  import.meta.env.VITE_GATEWAY_WS_URL ?? DEFAULT_GATEWAY_WS_URL;

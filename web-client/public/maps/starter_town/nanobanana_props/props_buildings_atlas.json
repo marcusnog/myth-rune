@@ -1,0 +1,2330 @@
+{
+  "image": "props_buildings_atlas.png",
+  "cellWidth": 128,
+  "cellHeight": 128,
+  "columns": 8,
+  "rows": 10,
+  "itemCount": 80,
+  "items": [
+    {
+      "id": "asset_005",
+      "filename": "asset_005_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 86,
+        "minY": 2,
+        "maxX": 125,
+        "maxY": 38,
+        "width": 40,
+        "height": 37,
+        "pixelCount": 875,
+        "area": 1480
+      },
+      "atlasCell": {
+        "column": 0,
+        "row": 0,
+        "x": 0,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 40,
+        "y": 42,
+        "width": 48,
+        "height": 43
+      }
+    },
+    {
+      "id": "asset_008",
+      "filename": "asset_008_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 0,
+        "minY": 3,
+        "maxX": 40,
+        "maxY": 38,
+        "width": 41,
+        "height": 36,
+        "pixelCount": 887,
+        "area": 1476
+      },
+      "atlasCell": {
+        "column": 1,
+        "row": 0,
+        "x": 128,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 169,
+        "y": 42,
+        "width": 45,
+        "height": 43
+      }
+    },
+    {
+      "id": "asset_009",
+      "filename": "asset_009_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 44,
+        "minY": 3,
+        "maxX": 82,
+        "maxY": 38,
+        "width": 39,
+        "height": 36,
+        "pixelCount": 856,
+        "area": 1404
+      },
+      "atlasCell": {
+        "column": 2,
+        "row": 0,
+        "x": 256,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 296,
+        "y": 42,
+        "width": 47,
+        "height": 43
+      }
+    },
+    {
+      "id": "asset_010",
+      "filename": "asset_010_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 129,
+        "minY": 3,
+        "maxX": 166,
+        "maxY": 38,
+        "width": 38,
+        "height": 36,
+        "pixelCount": 767,
+        "area": 1368
+      },
+      "atlasCell": {
+        "column": 3,
+        "row": 0,
+        "x": 384,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 425,
+        "y": 42,
+        "width": 46,
+        "height": 43
+      }
+    },
+    {
+      "id": "asset_011",
+      "filename": "asset_011_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 301,
+        "minY": 3,
+        "maxX": 333,
+        "maxY": 42,
+        "width": 33,
+        "height": 40,
+        "pixelCount": 1037,
+        "area": 1320
+      },
+      "atlasCell": {
+        "column": 4,
+        "row": 0,
+        "x": 512,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 555,
+        "y": 40,
+        "width": 41,
+        "height": 47
+      }
+    },
+    {
+      "id": "asset_012",
+      "filename": "asset_012_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 171,
+        "minY": 5,
+        "maxX": 208,
+        "maxY": 36,
+        "width": 38,
+        "height": 32,
+        "pixelCount": 1145,
+        "area": 1216
+      },
+      "atlasCell": {
+        "column": 5,
+        "row": 0,
+        "x": 640,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 681,
+        "y": 44,
+        "width": 46,
+        "height": 40
+      }
+    },
+    {
+      "id": "asset_013",
+      "filename": "asset_013_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 214,
+        "minY": 5,
+        "maxX": 251,
+        "maxY": 36,
+        "width": 38,
+        "height": 32,
+        "pixelCount": 1160,
+        "area": 1216
+      },
+      "atlasCell": {
+        "column": 6,
+        "row": 0,
+        "x": 768,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 809,
+        "y": 44,
+        "width": 46,
+        "height": 40
+      }
+    },
+    {
+      "id": "asset_014",
+      "filename": "asset_014_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 256,
+        "minY": 5,
+        "maxX": 293,
+        "maxY": 36,
+        "width": 38,
+        "height": 32,
+        "pixelCount": 1177,
+        "area": 1216
+      },
+      "atlasCell": {
+        "column": 7,
+        "row": 0,
+        "x": 896,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 937,
+        "y": 44,
+        "width": 46,
+        "height": 40
+      }
+    },
+    {
+      "id": "asset_015",
+      "filename": "asset_015_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 344,
+        "minY": 10,
+        "maxX": 375,
+        "maxY": 42,
+        "width": 32,
+        "height": 33,
+        "pixelCount": 749,
+        "area": 1056
+      },
+      "atlasCell": {
+        "column": 0,
+        "row": 1,
+        "x": 0,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 44,
+        "y": 171,
+        "width": 40,
+        "height": 41
+      }
+    },
+    {
+      "id": "asset_020",
+      "filename": "asset_020_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 2,
+        "minY": 50,
+        "maxX": 39,
+        "maxY": 85,
+        "width": 38,
+        "height": 36,
+        "pixelCount": 823,
+        "area": 1368
+      },
+      "atlasCell": {
+        "column": 1,
+        "row": 1,
+        "x": 128,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 170,
+        "y": 170,
+        "width": 44,
+        "height": 44
+      }
+    },
+    {
+      "id": "asset_021",
+      "filename": "asset_021_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 130,
+        "minY": 50,
+        "maxX": 166,
+        "maxY": 85,
+        "width": 37,
+        "height": 36,
+        "pixelCount": 684,
+        "area": 1332
+      },
+      "atlasCell": {
+        "column": 2,
+        "row": 1,
+        "x": 256,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 297,
+        "y": 170,
+        "width": 45,
+        "height": 44
+      }
+    },
+    {
+      "id": "asset_022",
+      "filename": "asset_022_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 301,
+        "minY": 50,
+        "maxX": 333,
+        "maxY": 89,
+        "width": 33,
+        "height": 40,
+        "pixelCount": 1054,
+        "area": 1320
+      },
+      "atlasCell": {
+        "column": 3,
+        "row": 1,
+        "x": 384,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 427,
+        "y": 168,
+        "width": 41,
+        "height": 48
+      }
+    },
+    {
+      "id": "asset_023",
+      "filename": "asset_023_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 46,
+        "minY": 52,
+        "maxX": 80,
+        "maxY": 83,
+        "width": 35,
+        "height": 32,
+        "pixelCount": 1076,
+        "area": 1120
+      },
+      "atlasCell": {
+        "column": 4,
+        "row": 1,
+        "x": 512,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 554,
+        "y": 172,
+        "width": 43,
+        "height": 40
+      }
+    },
+    {
+      "id": "asset_024",
+      "filename": "asset_024_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 87,
+        "minY": 52,
+        "maxX": 124,
+        "maxY": 83,
+        "width": 38,
+        "height": 32,
+        "pixelCount": 1195,
+        "area": 1216
+      },
+      "atlasCell": {
+        "column": 5,
+        "row": 1,
+        "x": 640,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 681,
+        "y": 172,
+        "width": 46,
+        "height": 40
+      }
+    },
+    {
+      "id": "asset_025",
+      "filename": "asset_025_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 172,
+        "minY": 52,
+        "maxX": 208,
+        "maxY": 83,
+        "width": 37,
+        "height": 32,
+        "pixelCount": 1116,
+        "area": 1184
+      },
+      "atlasCell": {
+        "column": 6,
+        "row": 1,
+        "x": 768,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 809,
+        "y": 172,
+        "width": 45,
+        "height": 40
+      }
+    },
+    {
+      "id": "asset_026",
+      "filename": "asset_026_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 214,
+        "minY": 52,
+        "maxX": 251,
+        "maxY": 83,
+        "width": 38,
+        "height": 32,
+        "pixelCount": 1149,
+        "area": 1216
+      },
+      "atlasCell": {
+        "column": 7,
+        "row": 1,
+        "x": 896,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 937,
+        "y": 172,
+        "width": 46,
+        "height": 40
+      }
+    },
+    {
+      "id": "asset_027",
+      "filename": "asset_027_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 256,
+        "minY": 52,
+        "maxX": 294,
+        "maxY": 83,
+        "width": 39,
+        "height": 32,
+        "pixelCount": 1171,
+        "area": 1248
+      },
+      "atlasCell": {
+        "column": 0,
+        "row": 2,
+        "x": 0,
+        "y": 256,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 40,
+        "y": 300,
+        "width": 47,
+        "height": 40
+      }
+    },
+    {
+      "id": "asset_028",
+      "filename": "asset_028_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 346,
+        "minY": 63,
+        "maxX": 372,
+        "maxY": 89,
+        "width": 27,
+        "height": 27,
+        "pixelCount": 500,
+        "area": 729
+      },
+      "atlasCell": {
+        "column": 1,
+        "row": 2,
+        "x": 128,
+        "y": 256,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 174,
+        "y": 302,
+        "width": 35,
+        "height": 35
+      }
+    },
+    {
+      "id": "asset_029",
+      "filename": "asset_029_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 251,
+        "minY": 82,
+        "maxX": 256,
+        "maxY": 101,
+        "width": 6,
+        "height": 20,
+        "pixelCount": 43,
+        "area": 120
+      },
+      "atlasCell": {
+        "column": 2,
+        "row": 2,
+        "x": 256,
+        "y": 256,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 313,
+        "y": 306,
+        "width": 14,
+        "height": 28
+      }
+    },
+    {
+      "id": "asset_034",
+      "filename": "asset_034_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 1,
+        "minY": 96,
+        "maxX": 41,
+        "maxY": 133,
+        "width": 41,
+        "height": 38,
+        "pixelCount": 931,
+        "area": 1558
+      },
+      "atlasCell": {
+        "column": 3,
+        "row": 2,
+        "x": 384,
+        "y": 256,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 425,
+        "y": 297,
+        "width": 46,
+        "height": 46
+      }
+    },
+    {
+      "id": "asset_035",
+      "filename": "asset_035_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 43,
+        "minY": 96,
+        "maxX": 125,
+        "maxY": 133,
+        "width": 83,
+        "height": 38,
+        "pixelCount": 1743,
+        "area": 3154
+      },
+      "atlasCell": {
+        "column": 4,
+        "row": 2,
+        "x": 512,
+        "y": 256,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 530,
+        "y": 297,
+        "width": 91,
+        "height": 46
+      }
+    },
+    {
+      "id": "asset_036",
+      "filename": "asset_036_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 299,
+        "minY": 96,
+        "maxX": 334,
+        "maxY": 135,
+        "width": 36,
+        "height": 40,
+        "pixelCount": 1109,
+        "area": 1440
+      },
+      "atlasCell": {
+        "column": 5,
+        "row": 2,
+        "x": 640,
+        "y": 256,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 682,
+        "y": 296,
+        "width": 44,
+        "height": 48
+      }
+    },
+    {
+      "id": "asset_038",
+      "filename": "asset_038_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 131,
+        "minY": 98,
+        "maxX": 164,
+        "maxY": 133,
+        "width": 34,
+        "height": 36,
+        "pixelCount": 539,
+        "area": 1224
+      },
+      "atlasCell": {
+        "column": 6,
+        "row": 2,
+        "x": 768,
+        "y": 256,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 811,
+        "y": 298,
+        "width": 42,
+        "height": 44
+      }
+    },
+    {
+      "id": "asset_039",
+      "filename": "asset_039_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 171,
+        "minY": 99,
+        "maxX": 208,
+        "maxY": 129,
+        "width": 38,
+        "height": 31,
+        "pixelCount": 1165,
+        "area": 1178
+      },
+      "atlasCell": {
+        "column": 7,
+        "row": 2,
+        "x": 896,
+        "y": 256,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 937,
+        "y": 300,
+        "width": 46,
+        "height": 39
+      }
+    },
+    {
+      "id": "asset_040",
+      "filename": "asset_040_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 214,
+        "minY": 99,
+        "maxX": 251,
+        "maxY": 129,
+        "width": 38,
+        "height": 31,
+        "pixelCount": 1175,
+        "area": 1178
+      },
+      "atlasCell": {
+        "column": 0,
+        "row": 3,
+        "x": 0,
+        "y": 384,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 41,
+        "y": 428,
+        "width": 46,
+        "height": 39
+      }
+    },
+    {
+      "id": "asset_041",
+      "filename": "asset_041_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 256,
+        "minY": 99,
+        "maxX": 293,
+        "maxY": 129,
+        "width": 38,
+        "height": 31,
+        "pixelCount": 1175,
+        "area": 1178
+      },
+      "atlasCell": {
+        "column": 1,
+        "row": 3,
+        "x": 128,
+        "y": 384,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 169,
+        "y": 428,
+        "width": 46,
+        "height": 39
+      }
+    },
+    {
+      "id": "asset_042",
+      "filename": "asset_042_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 345,
+        "minY": 112,
+        "maxX": 373,
+        "maxY": 135,
+        "width": 29,
+        "height": 24,
+        "pixelCount": 541,
+        "area": 696
+      },
+      "atlasCell": {
+        "column": 2,
+        "row": 3,
+        "x": 256,
+        "y": 384,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 301,
+        "y": 432,
+        "width": 37,
+        "height": 32
+      }
+    },
+    {
+      "id": "asset_043",
+      "filename": "asset_043_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 251,
+        "minY": 128,
+        "maxX": 256,
+        "maxY": 150,
+        "width": 6,
+        "height": 23,
+        "pixelCount": 53,
+        "area": 138
+      },
+      "atlasCell": {
+        "column": 3,
+        "row": 3,
+        "x": 384,
+        "y": 384,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 441,
+        "y": 432,
+        "width": 14,
+        "height": 31
+      }
+    },
+    {
+      "id": "asset_044",
+      "filename": "asset_044_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 7,
+        "minY": 139,
+        "maxX": 38,
+        "maxY": 180,
+        "width": 32,
+        "height": 42,
+        "pixelCount": 935,
+        "area": 1344
+      },
+      "atlasCell": {
+        "column": 4,
+        "row": 3,
+        "x": 512,
+        "y": 384,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 556,
+        "y": 423,
+        "width": 40,
+        "height": 50
+      }
+    },
+    {
+      "id": "asset_045",
+      "filename": "asset_045_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 84,
+        "minY": 140,
+        "maxX": 125,
+        "maxY": 181,
+        "width": 42,
+        "height": 42,
+        "pixelCount": 1039,
+        "area": 1764
+      },
+      "atlasCell": {
+        "column": 5,
+        "row": 3,
+        "x": 640,
+        "y": 384,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 679,
+        "y": 423,
+        "width": 50,
+        "height": 50
+      }
+    },
+    {
+      "id": "asset_050",
+      "filename": "asset_050_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 45,
+        "minY": 141,
+        "maxX": 81,
+        "maxY": 181,
+        "width": 37,
+        "height": 41,
+        "pixelCount": 860,
+        "area": 1517
+      },
+      "atlasCell": {
+        "column": 6,
+        "row": 3,
+        "x": 768,
+        "y": 384,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 809,
+        "y": 423,
+        "width": 45,
+        "height": 49
+      }
+    },
+    {
+      "id": "asset_052",
+      "filename": "asset_052_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 131,
+        "minY": 143,
+        "maxX": 164,
+        "maxY": 180,
+        "width": 34,
+        "height": 38,
+        "pixelCount": 478,
+        "area": 1292
+      },
+      "atlasCell": {
+        "column": 7,
+        "row": 3,
+        "x": 896,
+        "y": 384,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 939,
+        "y": 425,
+        "width": 42,
+        "height": 46
+      }
+    },
+    {
+      "id": "asset_053",
+      "filename": "asset_053_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 300,
+        "minY": 143,
+        "maxX": 334,
+        "maxY": 181,
+        "width": 35,
+        "height": 39,
+        "pixelCount": 1060,
+        "area": 1365
+      },
+      "atlasCell": {
+        "column": 0,
+        "row": 4,
+        "x": 0,
+        "y": 512,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 42,
+        "y": 552,
+        "width": 43,
+        "height": 47
+      }
+    },
+    {
+      "id": "asset_054",
+      "filename": "asset_054_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 340,
+        "minY": 144,
+        "maxX": 378,
+        "maxY": 180,
+        "width": 39,
+        "height": 37,
+        "pixelCount": 835,
+        "area": 1443
+      },
+      "atlasCell": {
+        "column": 1,
+        "row": 4,
+        "x": 128,
+        "y": 512,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 168,
+        "y": 553,
+        "width": 47,
+        "height": 45
+      }
+    },
+    {
+      "id": "asset_056",
+      "filename": "asset_056_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 214,
+        "minY": 146,
+        "maxX": 250,
+        "maxY": 174,
+        "width": 37,
+        "height": 29,
+        "pixelCount": 1061,
+        "area": 1073
+      },
+      "atlasCell": {
+        "column": 2,
+        "row": 4,
+        "x": 256,
+        "y": 512,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 297,
+        "y": 557,
+        "width": 45,
+        "height": 37
+      }
+    },
+    {
+      "id": "asset_057",
+      "filename": "asset_057_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 256,
+        "minY": 146,
+        "maxX": 292,
+        "maxY": 175,
+        "width": 37,
+        "height": 30,
+        "pixelCount": 859,
+        "area": 1110
+      },
+      "atlasCell": {
+        "column": 3,
+        "row": 4,
+        "x": 384,
+        "y": 512,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 425,
+        "y": 557,
+        "width": 45,
+        "height": 38
+      }
+    },
+    {
+      "id": "asset_058",
+      "filename": "asset_058_building_part.png",
+      "category": "building_part",
+      "sourceBox": {
+        "minX": 172,
+        "minY": 147,
+        "maxX": 208,
+        "maxY": 175,
+        "width": 37,
+        "height": 29,
+        "pixelCount": 1017,
+        "area": 1073
+      },
+      "atlasCell": {
+        "column": 4,
+        "row": 4,
+        "x": 512,
+        "y": 512,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 553,
+        "y": 557,
+        "width": 45,
+        "height": 37
+      }
+    },
+    {
+      "id": "asset_065",
+      "filename": "asset_065_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 87,
+        "minY": 186,
+        "maxX": 124,
+        "maxY": 228,
+        "width": 38,
+        "height": 43,
+        "pixelCount": 1106,
+        "area": 1634
+      },
+      "atlasCell": {
+        "column": 5,
+        "row": 4,
+        "x": 640,
+        "y": 512,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 681,
+        "y": 550,
+        "width": 46,
+        "height": 51
+      }
+    },
+    {
+      "id": "asset_066",
+      "filename": "asset_066_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 130,
+        "minY": 186,
+        "maxX": 166,
+        "maxY": 228,
+        "width": 37,
+        "height": 43,
+        "pixelCount": 1042,
+        "area": 1591
+      },
+      "atlasCell": {
+        "column": 6,
+        "row": 4,
+        "x": 768,
+        "y": 512,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 809,
+        "y": 550,
+        "width": 45,
+        "height": 51
+      }
+    },
+    {
+      "id": "asset_067",
+      "filename": "asset_067_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 256,
+        "minY": 186,
+        "maxX": 294,
+        "maxY": 228,
+        "width": 39,
+        "height": 43,
+        "pixelCount": 1129,
+        "area": 1677
+      },
+      "atlasCell": {
+        "column": 7,
+        "row": 4,
+        "x": 896,
+        "y": 512,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 936,
+        "y": 550,
+        "width": 47,
+        "height": 51
+      }
+    },
+    {
+      "id": "asset_068",
+      "filename": "asset_068_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 2,
+        "minY": 187,
+        "maxX": 40,
+        "maxY": 228,
+        "width": 39,
+        "height": 42,
+        "pixelCount": 1127,
+        "area": 1638
+      },
+      "atlasCell": {
+        "column": 0,
+        "row": 5,
+        "x": 0,
+        "y": 640,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 41,
+        "y": 679,
+        "width": 45,
+        "height": 50
+      }
+    },
+    {
+      "id": "asset_069",
+      "filename": "asset_069_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 172,
+        "minY": 187,
+        "maxX": 209,
+        "maxY": 227,
+        "width": 38,
+        "height": 41,
+        "pixelCount": 1041,
+        "area": 1558
+      },
+      "atlasCell": {
+        "column": 1,
+        "row": 5,
+        "x": 128,
+        "y": 640,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 169,
+        "y": 679,
+        "width": 46,
+        "height": 49
+      }
+    },
+    {
+      "id": "asset_070",
+      "filename": "asset_070_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 213,
+        "minY": 187,
+        "maxX": 251,
+        "maxY": 228,
+        "width": 39,
+        "height": 42,
+        "pixelCount": 1056,
+        "area": 1638
+      },
+      "atlasCell": {
+        "column": 2,
+        "row": 5,
+        "x": 256,
+        "y": 640,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 296,
+        "y": 679,
+        "width": 47,
+        "height": 50
+      }
+    },
+    {
+      "id": "asset_071",
+      "filename": "asset_071_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 298,
+        "minY": 187,
+        "maxX": 335,
+        "maxY": 228,
+        "width": 38,
+        "height": 42,
+        "pixelCount": 1111,
+        "area": 1596
+      },
+      "atlasCell": {
+        "column": 3,
+        "row": 5,
+        "x": 384,
+        "y": 640,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 425,
+        "y": 679,
+        "width": 46,
+        "height": 50
+      }
+    },
+    {
+      "id": "asset_072",
+      "filename": "asset_072_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 45,
+        "minY": 188,
+        "maxX": 81,
+        "maxY": 228,
+        "width": 37,
+        "height": 41,
+        "pixelCount": 1030,
+        "area": 1517
+      },
+      "atlasCell": {
+        "column": 4,
+        "row": 5,
+        "x": 512,
+        "y": 640,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 553,
+        "y": 679,
+        "width": 45,
+        "height": 49
+      }
+    },
+    {
+      "id": "asset_075",
+      "filename": "asset_075_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 342,
+        "minY": 189,
+        "maxX": 377,
+        "maxY": 227,
+        "width": 36,
+        "height": 39,
+        "pixelCount": 1026,
+        "area": 1404
+      },
+      "atlasCell": {
+        "column": 5,
+        "row": 5,
+        "x": 640,
+        "y": 640,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 682,
+        "y": 680,
+        "width": 44,
+        "height": 47
+      }
+    },
+    {
+      "id": "asset_081",
+      "filename": "asset_081_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 2,
+        "minY": 232,
+        "maxX": 39,
+        "maxY": 275,
+        "width": 38,
+        "height": 44,
+        "pixelCount": 1095,
+        "area": 1672
+      },
+      "atlasCell": {
+        "column": 6,
+        "row": 5,
+        "x": 768,
+        "y": 640,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 810,
+        "y": 678,
+        "width": 44,
+        "height": 52
+      }
+    },
+    {
+      "id": "asset_082",
+      "filename": "asset_082_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 45,
+        "minY": 232,
+        "maxX": 81,
+        "maxY": 275,
+        "width": 37,
+        "height": 44,
+        "pixelCount": 1052,
+        "area": 1628
+      },
+      "atlasCell": {
+        "column": 7,
+        "row": 5,
+        "x": 896,
+        "y": 640,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 937,
+        "y": 678,
+        "width": 45,
+        "height": 52
+      }
+    },
+    {
+      "id": "asset_083",
+      "filename": "asset_083_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 87,
+        "minY": 233,
+        "maxX": 124,
+        "maxY": 274,
+        "width": 38,
+        "height": 42,
+        "pixelCount": 1092,
+        "area": 1596
+      },
+      "atlasCell": {
+        "column": 0,
+        "row": 6,
+        "x": 0,
+        "y": 768,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 41,
+        "y": 807,
+        "width": 46,
+        "height": 50
+      }
+    },
+    {
+      "id": "asset_084",
+      "filename": "asset_084_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 510,
+        "minY": 233,
+        "maxX": 545,
+        "maxY": 274,
+        "width": 36,
+        "height": 42,
+        "pixelCount": 567,
+        "area": 1512
+      },
+      "atlasCell": {
+        "column": 1,
+        "row": 6,
+        "x": 128,
+        "y": 768,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 170,
+        "y": 807,
+        "width": 44,
+        "height": 50
+      }
+    },
+    {
+      "id": "asset_085",
+      "filename": "asset_085_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 551,
+        "minY": 233,
+        "maxX": 589,
+        "maxY": 274,
+        "width": 39,
+        "height": 42,
+        "pixelCount": 900,
+        "area": 1638
+      },
+      "atlasCell": {
+        "column": 2,
+        "row": 6,
+        "x": 256,
+        "y": 768,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 296,
+        "y": 807,
+        "width": 47,
+        "height": 50
+      }
+    },
+    {
+      "id": "asset_086",
+      "filename": "asset_086_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 594,
+        "minY": 233,
+        "maxX": 632,
+        "maxY": 274,
+        "width": 39,
+        "height": 42,
+        "pixelCount": 917,
+        "area": 1638
+      },
+      "atlasCell": {
+        "column": 3,
+        "row": 6,
+        "x": 384,
+        "y": 768,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 424,
+        "y": 807,
+        "width": 47,
+        "height": 50
+      }
+    },
+    {
+      "id": "asset_087",
+      "filename": "asset_087_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 129,
+        "minY": 234,
+        "maxX": 166,
+        "maxY": 275,
+        "width": 38,
+        "height": 42,
+        "pixelCount": 1097,
+        "area": 1596
+      },
+      "atlasCell": {
+        "column": 4,
+        "row": 6,
+        "x": 512,
+        "y": 768,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 553,
+        "y": 807,
+        "width": 46,
+        "height": 50
+      }
+    },
+    {
+      "id": "asset_088",
+      "filename": "asset_088_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 214,
+        "minY": 234,
+        "maxX": 250,
+        "maxY": 320,
+        "width": 37,
+        "height": 87,
+        "pixelCount": 1940,
+        "area": 3219
+      },
+      "atlasCell": {
+        "column": 5,
+        "row": 6,
+        "x": 640,
+        "y": 768,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 681,
+        "y": 784,
+        "width": 45,
+        "height": 95
+      }
+    },
+    {
+      "id": "asset_089",
+      "filename": "asset_089_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 636,
+        "minY": 235,
+        "maxX": 674,
+        "maxY": 271,
+        "width": 39,
+        "height": 37,
+        "pixelCount": 1093,
+        "area": 1443
+      },
+      "atlasCell": {
+        "column": 6,
+        "row": 6,
+        "x": 768,
+        "y": 768,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 809,
+        "y": 809,
+        "width": 45,
+        "height": 45
+      }
+    },
+    {
+      "id": "asset_090",
+      "filename": "asset_090_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 341,
+        "minY": 251,
+        "maxX": 378,
+        "maxY": 272,
+        "width": 38,
+        "height": 22,
+        "pixelCount": 576,
+        "area": 836
+      },
+      "atlasCell": {
+        "column": 7,
+        "row": 6,
+        "x": 896,
+        "y": 768,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 937,
+        "y": 817,
+        "width": 46,
+        "height": 30
+      }
+    },
+    {
+      "id": "asset_091",
+      "filename": "asset_091_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 383,
+        "minY": 251,
+        "maxX": 420,
+        "maxY": 272,
+        "width": 38,
+        "height": 22,
+        "pixelCount": 568,
+        "area": 836
+      },
+      "atlasCell": {
+        "column": 0,
+        "row": 7,
+        "x": 0,
+        "y": 896,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 41,
+        "y": 945,
+        "width": 46,
+        "height": 30
+      }
+    },
+    {
+      "id": "asset_092",
+      "filename": "asset_092_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 425,
+        "minY": 251,
+        "maxX": 462,
+        "maxY": 272,
+        "width": 38,
+        "height": 22,
+        "pixelCount": 528,
+        "area": 836
+      },
+      "atlasCell": {
+        "column": 1,
+        "row": 7,
+        "x": 128,
+        "y": 896,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 169,
+        "y": 945,
+        "width": 46,
+        "height": 30
+      }
+    },
+    {
+      "id": "asset_093",
+      "filename": "asset_093_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 468,
+        "minY": 251,
+        "maxX": 505,
+        "maxY": 272,
+        "width": 38,
+        "height": 22,
+        "pixelCount": 535,
+        "area": 836
+      },
+      "atlasCell": {
+        "column": 2,
+        "row": 7,
+        "x": 256,
+        "y": 896,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 297,
+        "y": 945,
+        "width": 46,
+        "height": 30
+      }
+    },
+    {
+      "id": "asset_094",
+      "filename": "asset_094_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 2,
+        "minY": 279,
+        "maxX": 40,
+        "maxY": 320,
+        "width": 39,
+        "height": 42,
+        "pixelCount": 1100,
+        "area": 1638
+      },
+      "atlasCell": {
+        "column": 3,
+        "row": 7,
+        "x": 384,
+        "y": 896,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 425,
+        "y": 935,
+        "width": 45,
+        "height": 50
+      }
+    },
+    {
+      "id": "asset_095",
+      "filename": "asset_095_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 45,
+        "minY": 279,
+        "maxX": 81,
+        "maxY": 320,
+        "width": 37,
+        "height": 42,
+        "pixelCount": 938,
+        "area": 1554
+      },
+      "atlasCell": {
+        "column": 4,
+        "row": 7,
+        "x": 512,
+        "y": 896,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 553,
+        "y": 935,
+        "width": 45,
+        "height": 50
+      }
+    },
+    {
+      "id": "asset_096",
+      "filename": "asset_096_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 87,
+        "minY": 279,
+        "maxX": 124,
+        "maxY": 321,
+        "width": 38,
+        "height": 43,
+        "pixelCount": 1127,
+        "area": 1634
+      },
+      "atlasCell": {
+        "column": 5,
+        "row": 7,
+        "x": 640,
+        "y": 896,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 681,
+        "y": 934,
+        "width": 46,
+        "height": 51
+      }
+    },
+    {
+      "id": "asset_097",
+      "filename": "asset_097_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 551,
+        "minY": 279,
+        "maxX": 589,
+        "maxY": 320,
+        "width": 39,
+        "height": 42,
+        "pixelCount": 837,
+        "area": 1638
+      },
+      "atlasCell": {
+        "column": 6,
+        "row": 7,
+        "x": 768,
+        "y": 896,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 808,
+        "y": 935,
+        "width": 47,
+        "height": 50
+      }
+    },
+    {
+      "id": "asset_098",
+      "filename": "asset_098_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 640,
+        "minY": 279,
+        "maxX": 674,
+        "maxY": 321,
+        "width": 35,
+        "height": 43,
+        "pixelCount": 793,
+        "area": 1505
+      },
+      "atlasCell": {
+        "column": 7,
+        "row": 7,
+        "x": 896,
+        "y": 896,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 939,
+        "y": 934,
+        "width": 41,
+        "height": 51
+      }
+    },
+    {
+      "id": "asset_099",
+      "filename": "asset_099_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 172,
+        "minY": 280,
+        "maxX": 208,
+        "maxY": 321,
+        "width": 37,
+        "height": 42,
+        "pixelCount": 1042,
+        "area": 1554
+      },
+      "atlasCell": {
+        "column": 0,
+        "row": 8,
+        "x": 0,
+        "y": 1024,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 41,
+        "y": 1063,
+        "width": 45,
+        "height": 50
+      }
+    },
+    {
+      "id": "asset_100",
+      "filename": "asset_100_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 469,
+        "minY": 280,
+        "maxX": 504,
+        "maxY": 317,
+        "width": 36,
+        "height": 38,
+        "pixelCount": 538,
+        "area": 1368
+      },
+      "atlasCell": {
+        "column": 1,
+        "row": 8,
+        "x": 128,
+        "y": 1024,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 170,
+        "y": 1065,
+        "width": 44,
+        "height": 46
+      }
+    },
+    {
+      "id": "asset_101",
+      "filename": "asset_101_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 595,
+        "minY": 280,
+        "maxX": 631,
+        "maxY": 320,
+        "width": 37,
+        "height": 41,
+        "pixelCount": 1384,
+        "area": 1517
+      },
+      "atlasCell": {
+        "column": 2,
+        "row": 8,
+        "x": 256,
+        "y": 1024,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 297,
+        "y": 1063,
+        "width": 45,
+        "height": 49
+      }
+    },
+    {
+      "id": "asset_102",
+      "filename": "asset_102_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 129,
+        "minY": 283,
+        "maxX": 166,
+        "maxY": 319,
+        "width": 38,
+        "height": 37,
+        "pixelCount": 630,
+        "area": 1406
+      },
+      "atlasCell": {
+        "column": 3,
+        "row": 8,
+        "x": 384,
+        "y": 1024,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 425,
+        "y": 1065,
+        "width": 46,
+        "height": 45
+      }
+    },
+    {
+      "id": "asset_103",
+      "filename": "asset_103_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 298,
+        "minY": 285,
+        "maxX": 315,
+        "maxY": 311,
+        "width": 18,
+        "height": 27,
+        "pixelCount": 369,
+        "area": 486
+      },
+      "atlasCell": {
+        "column": 4,
+        "row": 8,
+        "x": 512,
+        "y": 1024,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 563,
+        "y": 1070,
+        "width": 26,
+        "height": 35
+      }
+    },
+    {
+      "id": "asset_104",
+      "filename": "asset_104_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 256,
+        "minY": 288,
+        "maxX": 295,
+        "maxY": 311,
+        "width": 40,
+        "height": 24,
+        "pixelCount": 802,
+        "area": 960
+      },
+      "atlasCell": {
+        "column": 5,
+        "row": 8,
+        "x": 640,
+        "y": 1024,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 680,
+        "y": 1072,
+        "width": 48,
+        "height": 32
+      }
+    },
+    {
+      "id": "asset_105",
+      "filename": "asset_105_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 341,
+        "minY": 295,
+        "maxX": 378,
+        "maxY": 316,
+        "width": 38,
+        "height": 22,
+        "pixelCount": 481,
+        "area": 836
+      },
+      "atlasCell": {
+        "column": 6,
+        "row": 8,
+        "x": 768,
+        "y": 1024,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 809,
+        "y": 1073,
+        "width": 46,
+        "height": 30
+      }
+    },
+    {
+      "id": "asset_106",
+      "filename": "asset_106_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 383,
+        "minY": 295,
+        "maxX": 420,
+        "maxY": 315,
+        "width": 38,
+        "height": 21,
+        "pixelCount": 488,
+        "area": 798
+      },
+      "atlasCell": {
+        "column": 7,
+        "row": 8,
+        "x": 896,
+        "y": 1024,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 937,
+        "y": 1073,
+        "width": 46,
+        "height": 29
+      }
+    },
+    {
+      "id": "asset_107",
+      "filename": "asset_107_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 425,
+        "minY": 295,
+        "maxX": 462,
+        "maxY": 316,
+        "width": 38,
+        "height": 22,
+        "pixelCount": 496,
+        "area": 836
+      },
+      "atlasCell": {
+        "column": 0,
+        "row": 9,
+        "x": 0,
+        "y": 1152,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 41,
+        "y": 1201,
+        "width": 46,
+        "height": 30
+      }
+    },
+    {
+      "id": "asset_108",
+      "filename": "asset_108_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 317,
+        "minY": 296,
+        "maxX": 334,
+        "maxY": 321,
+        "width": 18,
+        "height": 26,
+        "pixelCount": 373,
+        "area": 468
+      },
+      "atlasCell": {
+        "column": 1,
+        "row": 9,
+        "x": 128,
+        "y": 1152,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 179,
+        "y": 1199,
+        "width": 26,
+        "height": 34
+      }
+    },
+    {
+      "id": "asset_109",
+      "filename": "asset_109_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 531,
+        "minY": 301,
+        "maxX": 545,
+        "maxY": 319,
+        "width": 15,
+        "height": 19,
+        "pixelCount": 218,
+        "area": 285
+      },
+      "atlasCell": {
+        "column": 2,
+        "row": 9,
+        "x": 256,
+        "y": 1152,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 308,
+        "y": 1202,
+        "width": 23,
+        "height": 27
+      }
+    },
+    {
+      "id": "asset_110",
+      "filename": "asset_110_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 511,
+        "minY": 304,
+        "maxX": 526,
+        "maxY": 321,
+        "width": 16,
+        "height": 18,
+        "pixelCount": 199,
+        "area": 288
+      },
+      "atlasCell": {
+        "column": 3,
+        "row": 9,
+        "x": 384,
+        "y": 1152,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 436,
+        "y": 1203,
+        "width": 24,
+        "height": 26
+      }
+    },
+    {
+      "id": "asset_111",
+      "filename": "asset_111_building.png",
+      "category": "building",
+      "sourceBox": {
+        "minX": 253,
+        "minY": 312,
+        "maxX": 339,
+        "maxY": 368,
+        "width": 87,
+        "height": 57,
+        "pixelCount": 4003,
+        "area": 4959
+      },
+      "atlasCell": {
+        "column": 4,
+        "row": 9,
+        "x": 512,
+        "y": 1152,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 528,
+        "y": 1185,
+        "width": 95,
+        "height": 61
+      }
+    },
+    {
+      "id": "asset_113",
+      "filename": "asset_113_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 431,
+        "minY": 325,
+        "maxX": 458,
+        "maxY": 367,
+        "width": 28,
+        "height": 43,
+        "pixelCount": 487,
+        "area": 1204
+      },
+      "atlasCell": {
+        "column": 5,
+        "row": 9,
+        "x": 640,
+        "y": 1152,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 686,
+        "y": 1192,
+        "width": 36,
+        "height": 48
+      }
+    },
+    {
+      "id": "asset_114",
+      "filename": "asset_114_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 383,
+        "minY": 326,
+        "maxX": 421,
+        "maxY": 367,
+        "width": 39,
+        "height": 42,
+        "pixelCount": 832,
+        "area": 1638
+      },
+      "atlasCell": {
+        "column": 6,
+        "row": 9,
+        "x": 768,
+        "y": 1152,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 808,
+        "y": 1192,
+        "width": 47,
+        "height": 47
+      }
+    },
+    {
+      "id": "asset_115",
+      "filename": "asset_115_prop.png",
+      "category": "prop",
+      "sourceBox": {
+        "minX": 340,
+        "minY": 331,
+        "maxX": 377,
+        "maxY": 364,
+        "width": 38,
+        "height": 34,
+        "pixelCount": 947,
+        "area": 1292
+      },
+      "atlasCell": {
+        "column": 7,
+        "row": 9,
+        "x": 896,
+        "y": 1152,
+        "width": 128,
+        "height": 128
+      },
+      "placedBox": {
+        "x": 937,
+        "y": 1195,
+        "width": 46,
+        "height": 42
+      }
+    }
+  ]
+}
