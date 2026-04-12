@@ -18,18 +18,12 @@ interface GatheringSystemParams {
 
 interface ActiveGatherTask {
   node: ResourceNodeEntity;
-  elapsedMs: number;
+  startedAt: number;
+  completesAt: number;
 }
 
 export interface GatheringUpdateResult {
   progress: ActionProgressView | null;
-  completed: {
-    resourceType: ResourceNodeType;
-    itemId: ItemId;
-    amount: number;
-    nodeLabel: string;
-  } | null;
-  canceledMessage: string | null;
 }
 
 export class GatheringSystem {
@@ -71,6 +65,10 @@ export class GatheringSystem {
     return this.focusedNode;
   }
 
+  public getNodeById(nodeId: string): ResourceNodeEntity | null {
+    return this.nodes.find((node) => node.id === nodeId) ?? null;
+  }
+
   public updateFocus(playerX: number, playerY: number): ResourceNodeEntity | null {
     if (this.activeTask) {
       this.focusedNode = this.activeTask.node;
@@ -99,7 +97,7 @@ export class GatheringSystem {
   public tryStartFocusedGather(
     nowMs: number,
     inventory: InventoryStore,
-  ): { ok: boolean; message: string } {
+  ): { ok: boolean; message: string; nodeId?: string; resourceType?: ResourceNodeType } {
     if (this.activeTask) {
       return { ok: false, message: "Ja existe uma coleta em andamento." };
     }
@@ -109,19 +107,23 @@ export class GatheringSystem {
     if (!this.focusedNode?.isAvailable()) {
       return { ok: false, message: "Nenhum recurso disponivel." };
     }
-
     const { requiredTool } = this.focusedNode.definition;
     if (requiredTool && inventory.getCount(requiredTool) === 0) {
       const toolName = ITEM_DEFINITIONS[requiredTool].name;
       return { ok: false, message: `Necessita de ${toolName}.` };
     }
-
+    this.focusedNode.beginCollecting();
     this.activeTask = {
       node: this.focusedNode,
-      elapsedMs: 0,
+      startedAt: nowMs,
+      completesAt: nowMs + this.focusedNode.gatherTimeMs,
     };
-    this.focusedNode.beginCollecting();
-    return { ok: true, message: `${this.focusedNode.definition.actionLabel} em andamento.` };
+    return {
+      ok: true,
+      message: `${this.focusedNode.definition.actionLabel} em andamento.`,
+      nodeId: this.focusedNode.id,
+      resourceType: this.focusedNode.definition.type,
+    };
   }
 
   public cancelActiveGather(reason: string, nowMs: number): string | null {
@@ -135,63 +137,64 @@ export class GatheringSystem {
     return `${reason}: ${nodeName}`;
   }
 
-  public update(
-    deltaMs: number,
-    playerX: number,
-    playerY: number,
-    nowMs: number,
-  ): GatheringUpdateResult {
-    if (!this.activeTask) {
-      return { progress: null, completed: null, canceledMessage: null };
+  public syncServerState(payload: {
+    active: boolean;
+    nodeId: string | null;
+    startedAt: number | null;
+    completesAt: number | null;
+    yieldItemId: ItemId | null;
+    yieldAmount: number | null;
+    status: "idle" | "started" | "cancelled" | "completed";
+  }): { message: string | null; itemId: ItemId | null; amount: number } {
+    const currentNode = payload.nodeId ? this.getNodeById(payload.nodeId) : null;
+    if (payload.status === "started" && currentNode && payload.startedAt && payload.completesAt) {
+      currentNode.beginCollecting();
+      this.activeTask = {
+        node: currentNode,
+        startedAt: payload.startedAt,
+        completesAt: payload.completesAt,
+      };
+      return { message: null, itemId: null, amount: 0 };
     }
 
-    if (!this.activeTask.node.isInRange(playerX, playerY)) {
-      this.activeTask.node.cancelCollecting();
+    if (payload.status === "completed" && currentNode) {
+      currentNode.finishCollecting();
       this.activeTask = null;
       return {
-        progress: null,
-        completed: null,
-        canceledMessage: "Coleta cancelada por sair do alcance.",
+        message: `${currentNode.definition.name} coletado.`,
+        itemId: payload.yieldItemId,
+        amount: payload.yieldAmount ?? 0,
       };
     }
 
-    this.activeTask.elapsedMs += deltaMs;
-    const progress = Math.min(
-      1,
-      this.activeTask.elapsedMs / this.activeTask.node.gatherTimeMs,
-    );
-    const remainingMs = Math.max(0, this.activeTask.node.gatherTimeMs - this.activeTask.elapsedMs);
-    const badge = this.activeTask.node.definition.badge;
-
-    if (progress < 1) {
-      return {
-        progress: {
-          label: `${this.activeTask.node.definition.actionLabel} ${this.activeTask.node.definition.name}`,
-          detail: `${this.activeTask.node.getRemainingQuantity()} restante(s) | ${formatDurationLabel(remainingMs)}`,
-          progress,
-          tone: this.activeTask.node.definition.category,
-          badge,
-          hint: this.activeTask.node.definition.feedback.progressHint,
-        },
-        completed: null,
-        canceledMessage: null,
-      };
+    if (payload.status === "cancelled") {
+      this.activeTask?.node.cancelCollecting();
+      this.activeTask = null;
+      return { message: "Coleta cancelada.", itemId: null, amount: 0 };
     }
 
-    const finishedNode = this.activeTask.node;
-    finishedNode.finishCollecting();
-    this.activeTask = null;
-    this.interactionLockedUntilMs = nowMs + 250;
+    if (!payload.active) {
+      this.activeTask = null;
+    }
+    return { message: null, itemId: null, amount: 0 };
+  }
+
+  public update(nowMs: number): GatheringUpdateResult {
+    if (!this.activeTask) {
+      return { progress: null };
+    }
+    const totalMs = Math.max(1, this.activeTask.completesAt - this.activeTask.startedAt);
+    const remainingMs = Math.max(0, this.activeTask.completesAt - nowMs);
+    const progress = Math.min(1, Math.max(0, (nowMs - this.activeTask.startedAt) / totalMs));
     return {
-      progress: null,
-      completed: {
-        resourceType: finishedNode.definition.type,
-        itemId: finishedNode.yieldItemId,
-        amount: finishedNode.yieldAmount,
-        nodeLabel: finishedNode.definition.name,
+      progress: {
+        label: `${this.activeTask.node.definition.actionLabel} ${this.activeTask.node.definition.name}`,
+        detail: `${this.activeTask.node.getRemainingQuantity()} restante(s) | ${formatDurationLabel(remainingMs)}`,
+        progress,
+        tone: this.activeTask.node.definition.category,
+        badge: this.activeTask.node.definition.badge,
+        hint: this.activeTask.node.definition.feedback.progressHint,
       },
-      canceledMessage: null,
     };
   }
 }
-

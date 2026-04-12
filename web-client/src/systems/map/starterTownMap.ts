@@ -511,15 +511,7 @@ export function buildStarterTownWorld(scene: Phaser.Scene): StarterTownWorld {
     mapOffsetY,
   );
 
-  const baseResourceNodes = parseResourceObjects(tilemap);
-  const resourceNodes = augmentForestTrees({
-    tilemap,
-    collisionLayer,
-    baseNodes: baseResourceNodes,
-    extraCount: 18,
-    safeCenterTileX: centerX,
-    safeCenterTileY: centerY,
-  });
+  const resourceNodes = parseResourceObjects(tilemap);
 
   return {
     tilemap,

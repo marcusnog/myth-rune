@@ -10,7 +10,8 @@ import { formatDurationLabel } from "../../utils/format";
 
 interface CraftingTask {
   recipe: CraftingRecipe;
-  elapsedMs: number;
+  startedAt: number;
+  completesAt: number;
 }
 
 export class CraftingSystem {
@@ -67,84 +68,96 @@ export class CraftingSystem {
     this.statusText = "Receita preparada para crafting.";
   }
 
-  public startSelectedCraft(): { ok: boolean; message: string } {
+  public startSelectedCraft(nowMs = Date.now()): { ok: boolean; message: string; recipeId?: string } {
     if (!this.selectedRecipeId) {
       return { ok: false, message: "Selecione uma receita." };
     }
-    return this.startCraft(this.selectedRecipeId);
-  }
-
-  public startCraft(recipeId: string): { ok: boolean; message: string } {
-    if (this.activeTask) {
-      return { ok: false, message: "Ja existe um craft em andamento." };
-    }
-    const recipe = this.findRecipe(recipeId);
+    const recipe = this.findRecipe(this.selectedRecipeId);
     if (!recipe) {
       return { ok: false, message: "Receita nao encontrada." };
     }
-    // Consume materials immediately on start — avoids TOCTOU between check and completion.
-    if (!this.inventory.consume(recipe.materials)) {
+    if (this.activeTask) {
+      return { ok: false, message: "Ja existe um craft em andamento." };
+    }
+    if (!this.inventory.canAfford(recipe.materials)) {
       this.statusText = "Materiais insuficientes.";
       return { ok: false, message: this.statusText };
     }
     this.activeTask = {
       recipe,
-      elapsedMs: 0,
+      startedAt: nowMs,
+      completesAt: nowMs + recipe.craftTimeMs,
     };
     this.panelOpen = true;
     this.statusText = `Criando ${recipe.name}...`;
-    return { ok: true, message: this.statusText };
+    return { ok: true, message: this.statusText, recipeId: recipe.id };
   }
 
   public cancelActiveCraft(): string | null {
     if (!this.activeTask) {
       return null;
     }
-    const { recipe } = this.activeTask;
-    // Refund materials consumed at craft start.
-    for (const material of recipe.materials) {
-      this.inventory.add(material.itemId, material.quantity);
-    }
+    const recipeName = this.activeTask.recipe.name;
     this.activeTask = null;
-    this.statusText = `Craft de ${recipe.name} cancelado.`;
-    return recipe.name;
+    this.statusText = `Craft de ${recipeName} cancelado.`;
+    return recipeName;
   }
 
-  public update(deltaMs: number): {
+  public syncServerState(payload: {
+    active: boolean;
+    recipeId: string | null;
+    startedAt: number | null;
+    completesAt: number | null;
+    status: "idle" | "started" | "cancelled" | "completed";
+  }): string | null {
+    if (!payload.active || !payload.recipeId || !payload.startedAt || !payload.completesAt) {
+      const previous = this.activeTask;
+      this.activeTask = null;
+      if (payload.status === "completed" && previous) {
+        this.statusText = `${previous.recipe.name} concluido com sucesso.`;
+        return `${previous.recipe.name} concluido.`;
+      }
+      if (payload.status === "cancelled" && previous) {
+        this.statusText = `Craft de ${previous.recipe.name} cancelado.`;
+        return `Craft de ${previous.recipe.name} cancelado.`;
+      }
+      return null;
+    }
+
+    const recipe = this.findRecipe(payload.recipeId);
+    if (!recipe) {
+      return null;
+    }
+    this.activeTask = {
+      recipe,
+      startedAt: payload.startedAt,
+      completesAt: payload.completesAt,
+    };
+    this.panelOpen = true;
+    this.statusText = `Criando ${recipe.name}...`;
+    return null;
+  }
+
+  public update(nowMs: number): {
     progress: ActionProgressView | null;
-    completedMessage: string | null;
   } {
     if (!this.activeTask) {
-      return { progress: null, completedMessage: null };
+      return { progress: null };
     }
-
-    this.activeTask.elapsedMs += deltaMs;
+    const totalMs = Math.max(1, this.activeTask.completesAt - this.activeTask.startedAt);
+    const elapsedMs = Math.max(0, nowMs - this.activeTask.startedAt);
+    const progress = Math.min(1, elapsedMs / totalMs);
+    const remainingMs = Math.max(0, this.activeTask.completesAt - nowMs);
     const recipe = this.activeTask.recipe;
-    const progress = Math.min(1, this.activeTask.elapsedMs / recipe.craftTimeMs);
-    const remainingMs = Math.max(0, recipe.craftTimeMs - this.activeTask.elapsedMs);
-
-    if (progress < 1) {
-      return {
-        progress: {
-          label: `Craftando ${recipe.name}`,
-          detail: `${ITEM_DEFINITIONS[recipe.outputItemId].name} x${recipe.outputQuantity} | ${formatDurationLabel(remainingMs)}`,
-          progress,
-          tone: "crafting",
-          badge: "CRF",
-          hint: "ESC, ataque ou movimento cancelam",
-        },
-        completedMessage: null,
-      };
-    }
-
-    // Materials were already consumed at startCraft — just deliver the output.
-    const completedRecipe = this.activeTask.recipe;
-    this.activeTask = null;
-    this.inventory.add(completedRecipe.outputItemId, completedRecipe.outputQuantity);
-    this.statusText = `${completedRecipe.name} concluido com sucesso.`;
     return {
-      progress: null,
-      completedMessage: `${completedRecipe.name} concluido.`,
+      progress: {
+        label: `Craftando ${recipe.name}`,
+        detail: `${ITEM_DEFINITIONS[recipe.outputItemId].name} x${recipe.outputQuantity} | ${formatDurationLabel(remainingMs)}`,
+        progress,
+        tone: "crafting",
+        badge: "CRF",
+        hint: "ESC, ataque ou movimento cancelam",
+      },
     };
   }
 

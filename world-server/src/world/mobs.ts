@@ -1,19 +1,22 @@
 import { randomUUID } from "node:crypto";
 import {
+  SKILL_DEFINITIONS,
   WORLD_COMBAT_CONFIG,
   WORLD_COMBAT_REJECT_MESSAGES,
+  playerAttackRangeForClass,
+  type MapId,
   type MobType,
+  type SkillId,
   type WorldCombatRejectCode,
 } from "@myth-of-rune/shared";
 import { clampToMap } from "../services/movement.js";
-import {
-  findNearestWalkablePosition,
-  resolveWorldCollision,
-} from "../services/mapCollision.js";
+import { findNearestWalkablePosition, resolveWorldCollision } from "../services/mapCollision.js";
 import type { ConnectedPlayer } from "./room.js";
+import { getMobSpawns } from "./worldMaps.js";
 
 interface Mob {
   id: string;
+  mapId: MapId;
   type: MobType;
   x: number;
   y: number;
@@ -33,11 +36,13 @@ export interface CombatEventPayload {
   targetId: string;
   damage: number;
   targetHealth: number;
+  isCritical?: boolean;
+  isDodged?: boolean;
 }
 
 export interface TickResult {
-  changed: boolean;
-  combatEvents: CombatEventPayload[];
+  changedMaps: Set<MapId>;
+  combatEventsByMap: Map<MapId, CombatEventPayload[]>;
 }
 
 export type PlayerAttackResult =
@@ -46,7 +51,7 @@ export type PlayerAttackResult =
       event: CombatEventPayload;
       mobDied: boolean;
       experienceAwarded: number;
-      diedAt?: { x: number; y: number; mobType: MobType };
+      diedAt?: { x: number; y: number; mobType: MobType; mapId: MapId };
     }
   | {
       ok: false;
@@ -54,18 +59,31 @@ export type PlayerAttackResult =
       message: string;
     };
 
-const store = new Map<string, Mob>();
+export type PlayerAoeAttackResult =
+  | {
+      ok: true;
+      events: CombatEventPayload[];
+      kills: Array<{ x: number; y: number; mobType: MobType; mapId: MapId }>;
+      experienceAwarded: number;
+    }
+  | {
+      ok: false;
+      code: WorldCombatRejectCode;
+      message: string;
+    };
 
-const DEFAULT_SPAWNS: ReadonlyArray<{ x: number; y: number }> = Object.freeze([
-  { x: 140, y: 180 },
-  { x: 620, y: 420 },
-  { x: 400, y: 100 },
-  { x: -368, y: -404 },
-  { x: 1136, y: -372 },
-  { x: 976, y: 1132 },
-  { x: -304, y: 1324 },
-  { x: 1392, y: 1292 },
-]);
+const MOB_RESPAWN_MS = 18_000;
+const storeByMap = new Map<MapId, Map<string, Mob>>();
+
+interface PendingRespawn {
+  mapId: MapId;
+  spawnX: number;
+  spawnY: number;
+  mobType: MobType;
+  at: number;
+}
+
+const pendingRespawns: PendingRespawn[] = [];
 
 const MOB_MAX_HEALTH: Readonly<Record<MobType, number>> = Object.freeze({
   goblin: 52,
@@ -73,6 +91,7 @@ const MOB_MAX_HEALTH: Readonly<Record<MobType, number>> = Object.freeze({
   wolf: 52,
   ent: 180,
 });
+
 const MOB_DETECT_RANGE = 250;
 const MOB_LEASH_RANGE = 320;
 const MOB_RETURN_TO_SPAWN_RANGE = 18;
@@ -83,6 +102,10 @@ const MOB_ATTACK_TELEGRAPH_MS = 260;
 const MOB_ATTACK_REACH_BUFFER = 6;
 const PLAYER_HIT_INVULNERABILITY_MS = 320;
 const MOB_HIT_INVULNERABILITY_MS = 220;
+const BASIC_ATTACK_POWER_SCALE = 0.2;
+const CRIT_DAMAGE_MULTIPLIER = 1.75;
+const CRIT_MINIMUM_BONUS = 1;
+
 const MOB_EXPERIENCE_REWARD: Readonly<Record<MobType, number>> = Object.freeze({
   goblin: 26,
   zombie: 34,
@@ -90,22 +113,45 @@ const MOB_EXPERIENCE_REWARD: Readonly<Record<MobType, number>> = Object.freeze({
   ent: 85,
 });
 
-function randVel(): number {
-  return (Math.random() - 0.5) * MOB_WANDER_SPEED * 2.0;
+function mapStore(mapId: MapId): Map<string, Mob> {
+  let existing = storeByMap.get(mapId);
+  if (!existing) {
+    existing = new Map<string, Mob>();
+    storeByMap.set(mapId, existing);
+  }
+  return existing;
 }
 
-function mobTypeForSpawn(spawnIndex: number): MobType {
-  const pattern: readonly MobType[] = ["goblin", "zombie", "wolf", "goblin", "wolf", "zombie", "ent", "goblin"];
+function randVel(rng: () => number = Math.random): number {
+  return (rng() - 0.5) * MOB_WANDER_SPEED * 2;
+}
+
+function mobTypeForSpawn(mapId: MapId, spawnIndex: number): MobType {
+  const defaultPattern: readonly MobType[] = [
+    "goblin", "zombie", "wolf", "goblin", "wolf",
+    "zombie", "ent", "goblin", "wolf", "zombie",
+    "goblin", "goblin", "wolf", "zombie", "goblin",
+    "ent", "wolf", "goblin", "zombie", "wolf",
+    "goblin", "zombie", "goblin", "wolf", "goblin",
+  ];
+  const forestPattern: readonly MobType[] = [
+    "wolf", "wolf", "goblin", "wolf", "ent", "goblin",
+    "wolf", "zombie", "ent", "wolf", "goblin", "wolf",
+  ];
+  const pattern = mapId === "forest_edge" ? forestPattern : defaultPattern;
   return pattern[spawnIndex % pattern.length]!;
 }
 
-function seedMobs(spawns: ReadonlyArray<{ x: number; y: number }>): void {
-  spawns.forEach((s, index) => {
-    const safeSpawn = findNearestWalkablePosition(s.x, s.y);
+function seedMobs(mapId: MapId, spawns: ReadonlyArray<{ x: number; y: number }>): void {
+  const targetStore = mapStore(mapId);
+  targetStore.clear();
+  spawns.forEach((spawn, index) => {
+    const safeSpawn = findNearestWalkablePosition(mapId, spawn.x, spawn.y);
+    const type = mobTypeForSpawn(mapId, index);
     const id = randomUUID();
-    const type = mobTypeForSpawn(index);
-    store.set(id, {
+    targetStore.set(id, {
       id,
+      mapId,
       type,
       x: safeSpawn.x,
       y: safeSpawn.y,
@@ -126,6 +172,37 @@ function dist(ax: number, ay: number, bx: number, by: number): number {
   return Math.hypot(bx - ax, by - ay);
 }
 
+function rollChance(chance: number, rng: () => number): boolean {
+  return chance > 0 && rng() < chance;
+}
+
+function playerBaseDamage(attacker: ConnectedPlayer): number {
+  return Math.max(
+    1,
+    attacker.stats.attack +
+      Math.floor(attacker.stats.power * BASIC_ATTACK_POWER_SCALE) -
+      WORLD_COMBAT_CONFIG.mobDefense,
+  );
+}
+
+function rollPlayerDamage(
+  attacker: ConnectedPlayer,
+  rng: () => number,
+): { damage: number; isCritical?: boolean } {
+  const baseDamage = playerBaseDamage(attacker);
+  const isCritical = rollChance(attacker.stats.critChance, rng);
+  if (!isCritical) {
+    return { damage: baseDamage };
+  }
+  return {
+    damage: Math.max(
+      baseDamage + CRIT_MINIMUM_BONUS,
+      Math.floor(baseDamage * CRIT_DAMAGE_MULTIPLIER),
+    ),
+    isCritical: true,
+  };
+}
+
 function resetAttackTelegraph(mob: Mob): void {
   mob.telegraphTargetId = null;
   mob.telegraphEndsAt = 0;
@@ -139,8 +216,8 @@ function moveTowards(mob: Mob, x: number, y: number, speed: number): void {
   mob.vy = (dy / len) * speed;
 }
 
-function livingPlayers(players: ConnectedPlayer[]): ConnectedPlayer[] {
-  return players.filter((p) => p.health > 0);
+function livingPlayers(players: ConnectedPlayer[], mapId: MapId): ConnectedPlayer[] {
+  return players.filter((player) => player.mapId === mapId && player.health > 0);
 }
 
 function nearestPlayer(
@@ -148,45 +225,80 @@ function nearestPlayer(
   players: ConnectedPlayer[],
 ): { player: ConnectedPlayer; distance: number } | null {
   let best: ConnectedPlayer | null = null;
-  let bestDist = Infinity;
-  for (const p of players) {
-    const dist = Math.hypot(p.x - mob.x, p.y - mob.y);
-    if (dist < bestDist) {
-      best = p;
-      bestDist = dist;
+  let bestDistance = Infinity;
+  for (const player of players) {
+    const distance = Math.hypot(player.x - mob.x, player.y - mob.y);
+    if (distance < bestDistance) {
+      best = player;
+      bestDistance = distance;
     }
   }
-  if (!best) {
-    return null;
+  return best ? { player: best, distance: bestDistance } : null;
+}
+
+function scheduleRespawn(mapId: MapId, spawnX: number, spawnY: number, mobType: MobType): void {
+  pendingRespawns.push({ mapId, spawnX, spawnY, mobType, at: Date.now() + MOB_RESPAWN_MS });
+}
+
+function flushPendingRespawns(): void {
+  const now = Date.now();
+  let index = 0;
+  while (index < pendingRespawns.length) {
+    const entry = pendingRespawns[index]!;
+    if (now >= entry.at) {
+      const safe = findNearestWalkablePosition(entry.mapId, entry.spawnX, entry.spawnY);
+      const id = randomUUID();
+      mapStore(entry.mapId).set(id, {
+        id,
+        mapId: entry.mapId,
+        type: entry.mobType,
+        x: safe.x,
+        y: safe.y,
+        spawnX: safe.x,
+        spawnY: safe.y,
+        vx: randVel(),
+        vy: randVel(),
+        hp: MOB_MAX_HEALTH[entry.mobType],
+        invulnerableUntilMs: 0,
+        lastAttackAt: 0,
+        telegraphTargetId: null,
+        telegraphEndsAt: 0,
+      });
+      pendingRespawns.splice(index, 1);
+    } else {
+      index += 1;
+    }
   }
-  return { player: best, distance: bestDist };
 }
 
 export function initMobs(): void {
-  if (store.size > 0) {
+  if (storeByMap.size > 0) {
     return;
   }
-  seedMobs(DEFAULT_SPAWNS);
+  seedMobs("default", getMobSpawns("default"));
+  seedMobs("forest_edge", getMobSpawns("forest_edge"));
 }
 
 export function resetMobsForTests(
-  spawns: ReadonlyArray<{ x: number; y: number }> = DEFAULT_SPAWNS,
+  spawns: ReadonlyArray<{ x: number; y: number }> = getMobSpawns("default"),
+  mapId: MapId = "default",
 ): void {
-  store.clear();
-  seedMobs(spawns);
+  storeByMap.clear();
+  pendingRespawns.length = 0;
+  seedMobs(mapId, spawns);
 }
 
-export function snapshotMobsForClient(): Array<{
+export function snapshotMobsForClient(mapId: MapId): Array<{
   mobId: string;
   mobType: MobType;
   x: number;
   y: number;
 }> {
-  return [...store.values()].map((m) => ({
-    mobId: m.id,
-    mobType: m.type,
-    x: m.x,
-    y: m.y,
+  return [...mapStore(mapId).values()].map((mob) => ({
+    mobId: mob.id,
+    mobType: mob.type,
+    x: mob.x,
+    y: mob.y,
   }));
 }
 
@@ -194,34 +306,20 @@ export function applyPlayerAttack(
   attacker: ConnectedPlayer,
   targetMobId: string,
   nowMs: number,
+  rng: () => number = Math.random,
 ): PlayerAttackResult {
-  if (
-    nowMs - attacker.lastAttackAt <
-    WORLD_COMBAT_CONFIG.playerAttackCooldownMs
-  ) {
-    return {
-      ok: false,
-      code: "COOLDOWN",
-      message: WORLD_COMBAT_REJECT_MESSAGES.COOLDOWN,
-    };
+  const playerAttackRange = playerAttackRangeForClass(attacker.characterClass);
+  if (nowMs - attacker.lastAttackAt < WORLD_COMBAT_CONFIG.playerAttackCooldownMs) {
+    return { ok: false, code: "COOLDOWN", message: WORLD_COMBAT_REJECT_MESSAGES.COOLDOWN };
   }
 
-  const mob = store.get(targetMobId);
+  const mob = mapStore(attacker.mapId).get(targetMobId);
   if (!mob) {
-    return {
-      ok: false,
-      code: "NOT_FOUND",
-      message: WORLD_COMBAT_REJECT_MESSAGES.NOT_FOUND,
-    };
+    return { ok: false, code: "NOT_FOUND", message: WORLD_COMBAT_REJECT_MESSAGES.NOT_FOUND };
   }
 
-  const targetDistance = dist(attacker.x, attacker.y, mob.x, mob.y);
-  if (targetDistance > WORLD_COMBAT_CONFIG.playerAttackRange) {
-    return {
-      ok: false,
-      code: "OUT_OF_RANGE",
-      message: WORLD_COMBAT_REJECT_MESSAGES.OUT_OF_RANGE,
-    };
+  if (dist(attacker.x, attacker.y, mob.x, mob.y) > playerAttackRange) {
+    return { ok: false, code: "OUT_OF_RANGE", message: WORLD_COMBAT_REJECT_MESSAGES.OUT_OF_RANGE };
   }
 
   attacker.lastAttackAt = nowMs;
@@ -240,8 +338,8 @@ export function applyPlayerAttack(
     };
   }
 
-  const damage = Math.max(1, attacker.stats.attack - WORLD_COMBAT_CONFIG.mobDefense);
-  mob.hp = Math.max(0, mob.hp - damage);
+  const rolled = rollPlayerDamage(attacker, rng);
+  mob.hp = Math.max(0, mob.hp - rolled.damage);
   if (mob.hp > 0) {
     mob.invulnerableUntilMs = nowMs + MOB_HIT_INVULNERABILITY_MS;
   }
@@ -249,139 +347,198 @@ export function applyPlayerAttack(
   const event: CombatEventPayload = {
     attackerId: attacker.characterId,
     targetId: mob.id,
-    damage,
+    damage: rolled.damage,
     targetHealth: mob.hp,
+    isCritical: rolled.isCritical,
   };
 
   if (mob.hp <= 0) {
+    const diedAt = { x: mob.x, y: mob.y, mobType: mob.type, mapId: mob.mapId };
     const experienceAwarded = MOB_EXPERIENCE_REWARD[mob.type];
-    const diedAt = { x: mob.x, y: mob.y, mobType: mob.type };
-    store.delete(mob.id);
+    scheduleRespawn(mob.mapId, mob.spawnX, mob.spawnY, mob.type);
+    mapStore(attacker.mapId).delete(mob.id);
     return { ok: true, event, mobDied: true, experienceAwarded, diedAt };
   }
+
   return { ok: true, event, mobDied: false, experienceAwarded: 0 };
 }
 
-/** Wander by default; chase and attack nearby living players. */
+export function applyPlayerAoeAttack(
+  attacker: ConnectedPlayer,
+  skillId: SkillId,
+  nowMs: number,
+  rng: () => number = Math.random,
+): PlayerAoeAttackResult {
+  const radius = SKILL_DEFINITIONS[skillId].impactRadius ?? 0;
+  if (radius <= 0) {
+    return { ok: false, code: "NOT_FOUND", message: WORLD_COMBAT_REJECT_MESSAGES.NOT_FOUND };
+  }
+
+  const events: CombatEventPayload[] = [];
+  const kills: Array<{ x: number; y: number; mobType: MobType; mapId: MapId }> = [];
+  let experienceAwarded = 0;
+  const targetStore = mapStore(attacker.mapId);
+
+  for (const mob of [...targetStore.values()]) {
+    if (dist(attacker.x, attacker.y, mob.x, mob.y) > radius) {
+      continue;
+    }
+
+    if (nowMs < mob.invulnerableUntilMs) {
+      events.push({
+        attackerId: attacker.characterId,
+        targetId: mob.id,
+        damage: 0,
+        targetHealth: mob.hp,
+      });
+      continue;
+    }
+
+    const rolled = rollPlayerDamage(attacker, rng);
+    mob.hp = Math.max(0, mob.hp - rolled.damage);
+    if (mob.hp > 0) {
+      mob.invulnerableUntilMs = nowMs + MOB_HIT_INVULNERABILITY_MS;
+    }
+
+    events.push({
+      attackerId: attacker.characterId,
+      targetId: mob.id,
+      damage: rolled.damage,
+      targetHealth: mob.hp,
+      isCritical: rolled.isCritical,
+    });
+
+    if (mob.hp <= 0) {
+      experienceAwarded += MOB_EXPERIENCE_REWARD[mob.type];
+      kills.push({ x: mob.x, y: mob.y, mobType: mob.type, mapId: mob.mapId });
+      scheduleRespawn(mob.mapId, mob.spawnX, mob.spawnY, mob.type);
+      targetStore.delete(mob.id);
+    }
+  }
+
+  return { ok: true, events, kills, experienceAwarded };
+}
+
 export function tickMobs(
   dtSeconds: number,
   players: ConnectedPlayer[],
   nowMs: number,
+  rng: () => number = Math.random,
 ): TickResult {
-  let changed = false;
-  const combatEvents: CombatEventPayload[] = [];
-  const livePlayers = livingPlayers(players);
+  flushPendingRespawns();
+  const changedMaps = new Set<MapId>();
+  const combatEventsByMap = new Map<MapId, CombatEventPayload[]>();
 
-  for (const m of store.values()) {
-    const target = nearestPlayer(m, livePlayers);
-    const distanceFromSpawn = dist(m.x, m.y, m.spawnX, m.spawnY);
-    const shouldReturnToSpawn = distanceFromSpawn > MOB_LEASH_RANGE;
+  for (const [mapId, targetStore] of storeByMap.entries()) {
+    const livePlayers = livingPlayers(players, mapId);
 
-    if (shouldReturnToSpawn) {
-      resetAttackTelegraph(m);
-      moveTowards(m, m.spawnX, m.spawnY, MOB_RETURN_SPEED);
-    } else {
-      const targetWithinLeash =
-        target != null &&
-        dist(target.player.x, target.player.y, m.spawnX, m.spawnY) <=
-          MOB_LEASH_RANGE * 1.1;
-      const canChase =
-        target != null &&
-        targetWithinLeash &&
-        target.distance <= MOB_DETECT_RANGE;
+    for (const mob of targetStore.values()) {
+      const target = nearestPlayer(mob, livePlayers);
+      const distanceFromSpawn = dist(mob.x, mob.y, mob.spawnX, mob.spawnY);
+      const shouldReturnToSpawn = distanceFromSpawn > MOB_LEASH_RANGE;
 
-      if (canChase && target) {
-        const { player, distance } = target;
-        if (distance <= WORLD_COMBAT_CONFIG.mobAttackRange) {
-          m.vx = 0;
-          m.vy = 0;
-          const offCooldown =
-            nowMs - m.lastAttackAt >= WORLD_COMBAT_CONFIG.mobAttackCooldownMs;
-          if (offCooldown) {
-            const telegraphTarget =
-              m.telegraphTargetId == null
-                ? null
-                : (livePlayers.find((p) => p.characterId === m.telegraphTargetId) ??
-                    null);
-            if (telegraphTarget == null) {
-              m.telegraphTargetId = player.characterId;
-              m.telegraphEndsAt = nowMs + MOB_ATTACK_TELEGRAPH_MS;
-            } else if (nowMs >= m.telegraphEndsAt) {
-              const distanceAfterTelegraph = dist(
-                m.x,
-                m.y,
-                telegraphTarget.x,
-                telegraphTarget.y,
-              );
-              const inRange =
-                distanceAfterTelegraph <=
-                WORLD_COMBAT_CONFIG.mobAttackRange + MOB_ATTACK_REACH_BUFFER;
-              const canTakeHit =
-                nowMs >= telegraphTarget.invulnerableUntilMs &&
-                telegraphTarget.health > 0;
-              if (inRange && canTakeHit) {
-                const damage = Math.max(
-                  1,
-                  WORLD_COMBAT_CONFIG.mobAttackDamage - telegraphTarget.stats.defense,
-                );
-                telegraphTarget.health = Math.max(
-                  0,
-                  telegraphTarget.health - damage,
-                );
-                telegraphTarget.invulnerableUntilMs =
-                  nowMs + PLAYER_HIT_INVULNERABILITY_MS;
-                combatEvents.push({
-                  attackerId: m.id,
-                  targetId: telegraphTarget.characterId,
-                  damage,
-                  targetHealth: telegraphTarget.health,
-                });
+      if (shouldReturnToSpawn) {
+        resetAttackTelegraph(mob);
+        moveTowards(mob, mob.spawnX, mob.spawnY, MOB_RETURN_SPEED);
+      } else {
+        const targetWithinLeash =
+          target != null &&
+          dist(target.player.x, target.player.y, mob.spawnX, mob.spawnY) <= MOB_LEASH_RANGE * 1.1;
+        const canChase = target != null && targetWithinLeash && target.distance <= MOB_DETECT_RANGE;
+
+        if (canChase && target) {
+          const { player, distance } = target;
+          if (distance <= WORLD_COMBAT_CONFIG.mobAttackRange) {
+            mob.vx = 0;
+            mob.vy = 0;
+            const offCooldown =
+              nowMs - mob.lastAttackAt >= WORLD_COMBAT_CONFIG.mobAttackCooldownMs;
+            if (offCooldown) {
+              const telegraphTarget =
+                mob.telegraphTargetId == null
+                  ? null
+                  : livePlayers.find((entry) => entry.characterId === mob.telegraphTargetId) ?? null;
+              if (telegraphTarget == null) {
+                mob.telegraphTargetId = player.characterId;
+                mob.telegraphEndsAt = nowMs + MOB_ATTACK_TELEGRAPH_MS;
+              } else if (nowMs >= mob.telegraphEndsAt) {
+                const distanceAfterTelegraph = dist(mob.x, mob.y, telegraphTarget.x, telegraphTarget.y);
+                const inRange =
+                  distanceAfterTelegraph <= WORLD_COMBAT_CONFIG.mobAttackRange + MOB_ATTACK_REACH_BUFFER;
+                const canTakeHit = nowMs >= telegraphTarget.invulnerableUntilMs && telegraphTarget.health > 0;
+                if (inRange && canTakeHit) {
+                  const mapEvents = combatEventsByMap.get(mapId) ?? [];
+                  if (rollChance(telegraphTarget.stats.dodgeChance, rng)) {
+                    telegraphTarget.invulnerableUntilMs = nowMs + PLAYER_HIT_INVULNERABILITY_MS;
+                    mapEvents.push({
+                      attackerId: mob.id,
+                      targetId: telegraphTarget.characterId,
+                      damage: 0,
+                      targetHealth: telegraphTarget.health,
+                      isDodged: true,
+                    });
+                  } else {
+                    const damage = Math.max(
+                      1,
+                      WORLD_COMBAT_CONFIG.mobAttackDamage - telegraphTarget.stats.defense,
+                    );
+                    telegraphTarget.health = Math.max(0, telegraphTarget.health - damage);
+                    telegraphTarget.invulnerableUntilMs = nowMs + PLAYER_HIT_INVULNERABILITY_MS;
+                    mapEvents.push({
+                      attackerId: mob.id,
+                      targetId: telegraphTarget.characterId,
+                      damage,
+                      targetHealth: telegraphTarget.health,
+                    });
+                  }
+                  combatEventsByMap.set(mapId, mapEvents);
+                }
+                mob.lastAttackAt = nowMs;
+                resetAttackTelegraph(mob);
               }
-              m.lastAttackAt = nowMs;
-              resetAttackTelegraph(m);
+            } else {
+              resetAttackTelegraph(mob);
             }
           } else {
-            resetAttackTelegraph(m);
+            resetAttackTelegraph(mob);
+            moveTowards(mob, player.x, player.y, MOB_CHASE_SPEED);
           }
         } else {
-          resetAttackTelegraph(m);
-          moveTowards(m, player.x, player.y, MOB_CHASE_SPEED);
-        }
-      } else {
-        resetAttackTelegraph(m);
-        if (distanceFromSpawn > MOB_RETURN_TO_SPAWN_RANGE) {
-          moveTowards(m, m.spawnX, m.spawnY, MOB_RETURN_SPEED);
-        } else if (Math.random() < 0.04) {
-          m.vx = randVel();
-          m.vy = randVel();
+          resetAttackTelegraph(mob);
+          if (distanceFromSpawn > MOB_RETURN_TO_SPAWN_RANGE) {
+            moveTowards(mob, mob.spawnX, mob.spawnY, MOB_RETURN_SPEED);
+          } else if (rng() < 0.04) {
+            mob.vx = randVel(rng);
+            mob.vy = randVel(rng);
+          }
         }
       }
-    }
 
-    let nx = m.x + m.vx * dtSeconds;
-    let ny = m.y + m.vy * dtSeconds;
-    const c = clampToMap(nx, ny);
-    if (Math.abs(c.x - nx) > 1e-6) {
-      m.vx *= -1;
+      let nx = mob.x + mob.vx * dtSeconds;
+      let ny = mob.y + mob.vy * dtSeconds;
+      const clamped = clampToMap(mapId, nx, ny);
+      if (Math.abs(clamped.x - nx) > 1e-6) {
+        mob.vx *= -1;
+      }
+      if (Math.abs(clamped.y - ny) > 1e-6) {
+        mob.vy *= -1;
+      }
+      nx = mob.x + mob.vx * dtSeconds;
+      ny = mob.y + mob.vy * dtSeconds;
+      const next = resolveWorldCollision(mapId, { x: mob.x, y: mob.y }, clampToMap(mapId, nx, ny));
+      if (Math.abs(next.x - nx) > 1e-3) {
+        mob.vx = 0;
+      }
+      if (Math.abs(next.y - ny) > 1e-3) {
+        mob.vy = 0;
+      }
+      if (Math.abs(next.x - mob.x) > 1e-3 || Math.abs(next.y - mob.y) > 1e-3) {
+        changedMaps.add(mapId);
+      }
+      mob.x = next.x;
+      mob.y = next.y;
     }
-    if (Math.abs(c.y - ny) > 1e-6) {
-      m.vy *= -1;
-    }
-    nx = m.x + m.vx * dtSeconds;
-    ny = m.y + m.vy * dtSeconds;
-    const next = resolveWorldCollision({ x: m.x, y: m.y }, clampToMap(nx, ny));
-    if (Math.abs(next.x - nx) > 1e-3) {
-      m.vx = 0;
-    }
-    if (Math.abs(next.y - ny) > 1e-3) {
-      m.vy = 0;
-    }
-    if (Math.abs(next.x - m.x) > 1e-3 || Math.abs(next.y - m.y) > 1e-3) {
-      changed = true;
-    }
-    m.x = next.x;
-    m.y = next.y;
   }
 
-  return { changed, combatEvents };
+  return { changedMaps, combatEventsByMap };
 }

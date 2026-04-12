@@ -14,10 +14,18 @@ function requireEnv(name: string): string {
   return v;
 }
 
+function parseAllowedOrigins(raw: string | undefined): string[] {
+  return (raw ?? "http://localhost:5173")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+}
+
 export const config = {
   port: Number(process.env.GATEWAY_PORT ?? "3000"),
   loginServerUrl: requireEnv("LOGIN_SERVER_URL"),
   worldServerUrl: requireEnv("WORLD_SERVER_URL"),
   combatServerUrl: requireEnv("COMBAT_SERVER_URL"),
+  allowedOrigins: parseAllowedOrigins(process.env.ALLOWED_ORIGINS),
   nodeEnv: process.env.NODE_ENV ?? "development",
 };

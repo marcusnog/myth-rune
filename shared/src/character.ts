@@ -19,6 +19,9 @@ export interface BaseStats {
   attack: number;
   defense: number;
   moveSpeed: number;
+  power: number;
+  critChance: number;
+  dodgeChance: number;
 }
 
 /**
@@ -31,28 +34,40 @@ export const MOVE_SPEED_WORLD_MULTIPLIER = 55;
 export const CLASS_BALANCE_TABLE: Readonly<Record<CharacterClassId, BaseStats>> =
   Object.freeze({
     [CharacterClass.Warrior]: {
-      maxHealth: 130,
-      attack: 15,
-      defense: 9,
-      moveSpeed: 4.4,
+      maxHealth: 148,
+      attack: 17,
+      defense: 10,
+      moveSpeed: 4.2,
+      power: 4,
+      critChance: 0.05,
+      dodgeChance: 0.03,
     },
     [CharacterClass.Mage]: {
-      maxHealth: 82,
-      attack: 19,
-      defense: 3,
-      moveSpeed: 5.1,
+      maxHealth: 76,
+      attack: 21,
+      defense: 2,
+      moveSpeed: 5.05,
+      power: 12,
+      critChance: 0.08,
+      dodgeChance: 0.04,
     },
     [CharacterClass.Rogue]: {
-      maxHealth: 92,
-      attack: 17,
-      defense: 5,
-      moveSpeed: 5.6,
+      maxHealth: 86,
+      attack: 15,
+      defense: 4,
+      moveSpeed: 5.95,
+      power: 6,
+      critChance: 0.22,
+      dodgeChance: 0.16,
     },
     [CharacterClass.Archer]: {
       maxHealth: 98,
       attack: 16,
       defense: 6,
       moveSpeed: 5.3,
+      power: 7,
+      critChance: 0.1,
+      dodgeChance: 0.06,
     },
   });
 

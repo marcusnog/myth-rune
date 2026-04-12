@@ -14,22 +14,19 @@ function requireEnv(name: string): string {
   return v;
 }
 
+function requireStrongSecret(name: string): string {
+  const secret = requireEnv(name);
+  if (secret.length < 32) {
+    throw new Error(`${name} must be at least 32 characters long.`);
+  }
+  return secret;
+}
+
 export const config = {
   port: Number(process.env.WORLD_SERVER_PORT ?? "3002"),
   databaseUrl: requireEnv("DATABASE_URL"),
   redisUrl: process.env.REDIS_URL ?? "redis://127.0.0.1:6379",
-  jwtSecret: requireEnv("JWT_SECRET"),
-  mapId: "default" as const,
+  jwtSecret: requireStrongSecret("JWT_SECRET"),
+  gmSecret: process.env.GM_SECRET ?? "",
   nodeEnv: process.env.NODE_ENV ?? "development",
 };
-
-/**
- * World bounds (server units), aligned to starter_town map placement on client.
- * The client anchors tilemap center at (400,300) and offsets a 128x128 map (32px tiles).
- */
-export const MAP_BOUNDS = { minX: -1664, maxX: 2432, minY: -1764, maxY: 2332 };
-
-export const RESPAWN_POINT = {
-  x: 384,
-  y: 256,
-} as const;

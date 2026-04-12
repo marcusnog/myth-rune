@@ -59,3 +59,23 @@ export interface CraftingPanelView {
   selectedMaterials: readonly CraftingMaterialView[];
   canCraftSelected: boolean;
 }
+
+export type NpcPanelActionEmphasis = "primary" | "muted" | "danger";
+
+export interface NpcPanelActionView {
+  actionId: string;
+  label: string;
+  description: string;
+  disabled: boolean;
+  emphasis: NpcPanelActionEmphasis;
+}
+
+export interface NpcPanelView {
+  open: boolean;
+  npcId: string;
+  npcName: string;
+  title: string;
+  description: string;
+  hint: string | null;
+  actions: readonly NpcPanelActionView[];
+}

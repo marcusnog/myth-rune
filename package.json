@@ -20,6 +20,7 @@
     "dev:web": "npm run dev -w web-client",
     "build:web": "npm run build -w web-client",
     "migrate": "npm run migrate -w login-server",
+    "validate:env": "node scripts/validate-env.mjs",
     "check:health": "node scripts/check-health.mjs",
     "check:health:all": "node scripts/check-health.mjs --all",
     "docker:up": "docker compose up --build",

@@ -19,6 +19,8 @@
         --text: #f2e8d4;
         --text-dim: #cbb694;
         --accent: #4ba97f;
+        --hp-text: "--/--";
+        --mp-text: "?/?";
       }
 
       * {
@@ -284,8 +286,8 @@
       }
 
       #hud-root {
-        --hud-scale: 0.78;
-        --hud-opacity: 0.94;
+        --hud-scale: 1;
+        --hud-opacity: 1;
         position: absolute;
         inset: 0;
         z-index: 6;
@@ -298,46 +300,68 @@
       }
 
       .hud-panel {
-        background: linear-gradient(180deg, #3e2514ed, #1a0f08f0);
-        border: 2px solid #946533;
-        box-shadow: inset 0 0 0 1px #1d1008, 0 10px 18px #0008;
+        background: linear-gradient(180deg, #1c1a19f0, #090909f2);
+        border: 2px solid #6f6248;
+        box-shadow:
+          inset 0 0 0 1px #24201a,
+          inset 0 0 18px #00000099,
+          0 10px 24px #00000088;
         border-radius: 9px;
         pointer-events: auto;
       }
 
       #hud-party {
         position: absolute;
-        top: 10px;
-        left: 10px;
-        width: 258px;
-        padding: 7px;
+        top: 14px;
+        left: 14px;
+        width: 452px;
+        min-height: 126px;
+        padding: 12px;
         display: grid;
-        grid-template-columns: 52px 1fr;
-        gap: 7px;
+        grid-template-columns: 96px 1fr;
+        gap: 14px;
+        background: linear-gradient(180deg, #1f1d1bf6, #0b0b0bf2);
+        border-color: #78694d;
+        border-radius: 6px;
+        box-shadow:
+          inset 0 0 0 1px #2b2620,
+          inset 0 0 28px #000000aa,
+          0 6px 18px #00000088;
       }
 
       .portrait {
-        border: 1px solid #956935;
-        border-radius: 7px;
-        background: radial-gradient(circle at 40% 20%, #6a4a33, #2a180f 68%);
+        border: 2px solid #62553f;
+        border-radius: 3px;
+        background: linear-gradient(180deg, #242322, #0d0d0d);
+        width: 96px;
+        height: 96px;
         display: grid;
         place-items: center;
         font-family: "Cinzel", serif;
-        font-size: 24px;
-        color: #f6d8a0;
+        font-size: 38px;
+        color: #a69472;
+        box-shadow: inset 0 0 18px #000000aa;
+        outline: 1px solid #2e2821;
+        outline-offset: -4px;
       }
 
       .party-meta {
         display: grid;
-        gap: 4px;
+        gap: 8px;
+        align-content: start;
       }
 
       .party-head {
+        display: grid;
+        gap: 6px;
+      }
+
+      .party-title {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        gap: 8px;
-        font-size: 11px;
+        gap: 6px;
+        min-width: 0;
+        flex-wrap: wrap;
       }
 
       .party-badges {
@@ -348,36 +372,151 @@
 
       .party-name {
         font-weight: 700;
-        color: #ffdc9d;
-        max-width: 118px;
+        color: #d3ab4f;
+        font-family: "Cinzel", serif;
+        font-size: 19px;
+        max-width: 300px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        text-shadow: 0 2px 0 #070707;
       }
 
       .party-class {
-        color: #9ed6ff;
+        color: #b8a27a;
         text-transform: uppercase;
-        font-size: 10px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        opacity: 0.9;
       }
 
       .party-level {
-        padding: 1px 5px;
-        border: 1px solid #7f5f2e;
+        padding: 2px 8px;
+        border: 1px solid #756242;
         border-radius: 999px;
-        color: #ffe9b8;
-        background: linear-gradient(180deg, #6b4a20, #36200f);
-        font-size: 10px;
+        color: #e3c98f;
+        background: linear-gradient(180deg, #32291d, #17120d);
+        font-size: 11px;
+        line-height: 1;
+      }
+
+      .party-resource-row {
+        display: grid;
+        grid-template-columns: 18px 1fr;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .resource-icon {
+        position: relative;
+        width: 18px;
+        height: 18px;
+      }
+
+      .resource-icon.hp::before,
+      .resource-icon.hp::after {
+        content: "";
+        position: absolute;
+      }
+
+      .resource-icon.hp::before {
+        left: 5px;
+        top: 6px;
+        width: 8px;
+        height: 8px;
+        background: #cf2929;
+        transform: rotate(45deg);
+        box-shadow: 0 0 8px #cf292966;
+      }
+
+      .resource-icon.hp::after {
+        left: 3px;
+        top: 3px;
+        width: 12px;
+        height: 8px;
+        background:
+          radial-gradient(circle at 4px 4px, #f05d5d 0 4px, #0000 4px),
+          radial-gradient(circle at 8px 4px, #f05d5d 0 4px, #0000 4px);
+      }
+
+      .resource-icon.mp::before,
+      .resource-icon.mp::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      .resource-icon.mp::before {
+        top: 2px;
+        width: 6px;
+        height: 5px;
+        border: 2px solid #d8e8ff;
+        border-bottom: none;
+        border-radius: 2px 2px 0 0;
+      }
+
+      .resource-icon.mp::after {
+        top: 6px;
+        width: 12px;
+        height: 9px;
+        border: 2px solid #90c8ff;
+        border-radius: 3px 3px 6px 6px;
+        background: linear-gradient(180deg, #67b6ff, #2578d0);
+        box-shadow: 0 0 8px #2578d044;
       }
 
       .resource-bar {
         position: relative;
+        width: 100%;
         height: 10px;
-        border: 1px solid #100a06;
-        box-shadow: inset 0 0 0 1px #4b2f1a;
-        border-radius: 3px;
-        background: #0008;
+        border: 2px solid #58504a;
+        box-shadow: inset 0 0 0 1px #0e0e0e;
+        border-radius: 4px;
+        background: #111;
         overflow: hidden;
+      }
+
+      .resource-bar.resource-health,
+      .resource-bar.resource-mana {
+        height: 24px;
+        border-radius: 4px;
+      }
+
+      .resource-bar.resource-exp {
+        height: 10px;
+        border-radius: 999px;
+        opacity: 0.92;
+        margin-top: 2px;
+      }
+
+      .resource-bar.resource-health::before,
+      .resource-bar.resource-mana::before {
+        content: none;
+      }
+
+      .resource-bar.resource-health::after,
+      .resource-bar.resource-mana::after {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        display: grid;
+        place-items: center;
+        color: #ffffff;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 13px;
+        font-weight: 600;
+        text-shadow: 0 2px 0 #000000cc;
+        pointer-events: none;
+      }
+
+      .resource-bar.resource-health::after {
+        content: var(--hp-text, "--/--");
+      }
+
+      .resource-bar.resource-mana::after {
+        content: var(--mp-text, "?/?");
       }
 
       .resource-fill {
@@ -385,74 +524,145 @@
         inset: 0;
         width: 100%;
         transition: width 110ms linear;
+        border-radius: inherit;
       }
 
       .resource-fill.hp {
-        background: linear-gradient(180deg, #db625f, #b6322f);
+        background: linear-gradient(180deg, #ff3d3d, #c61d1d);
       }
 
       .resource-fill.mp {
-        background: linear-gradient(180deg, #52a6ff, #245dbe);
+        background: linear-gradient(180deg, #46a8ff, #2468d5);
       }
 
       .resource-fill.exp {
-        background: linear-gradient(180deg, #f1c85f, #b67829);
+        background: linear-gradient(180deg, #d8b059, #8f6930);
       }
 
       .resource-text {
-        display: flex;
-        justify-content: space-between;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 8px;
         font-size: 10px;
-        color: #efd8b2;
+        color: #9f9276;
+        font-family: "IBM Plex Mono", monospace;
+      }
+
+      #hud-hp {
+        display: none;
       }
 
       #hud-status {
-        color: #93f0c3;
-        max-width: 90px;
+        color: #77b578;
+        max-width: 140px;
         text-align: right;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
 
+      #hud-root[data-character-class="warrior"] #hud-hp-fill {
+        box-shadow: 0 0 6px #e05050;
+      }
+
+      #hud-root[data-character-class="mage"] #hud-hp-fill {
+        box-shadow: 0 0 6px #5090e0;
+      }
+
+      #hud-root[data-character-class="rogue"] #hud-hp-fill {
+        box-shadow: 0 0 6px #50c080;
+      }
+
+      #hud-root[data-character-class="archer"] #hud-hp-fill {
+        box-shadow: 0 0 6px #c0a030;
+      }
+
+      #hud-minimap {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        width: 244px;
+        padding: 8px;
+        display: block;
+        background: linear-gradient(180deg, #1a1918f4, #090909f2);
+        border-radius: 6px;
+      }
+
       #hud-right {
         position: absolute;
-        top: 10px;
-        right: 10px;
-        width: 286px;
-        padding: 7px;
+        right: 14px;
+        bottom: 14px;
+        top: auto;
+        width: 298px;
+        padding: 12px;
+        overflow: visible;
+        background: linear-gradient(180deg, #1a1918f4, #090909f2);
+        border-radius: 6px;
       }
 
       .menu-row {
         display: grid;
-        grid-template-columns: repeat(4, 1fr) 34px;
-        gap: 5px;
-        margin-bottom: 6px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 0;
       }
 
       .menu-btn {
-        border: 1px solid #5e3d1e;
-        border-radius: 6px;
-        background: linear-gradient(180deg, #5b3620, #2c1a0f);
-        color: #d8b57e;
+        min-height: 92px;
+        border: 2px solid #57504a;
+        border-radius: 8px;
+        background: linear-gradient(180deg, #1d1d1cf0, #0d0d0df0);
+        color: #d3c7a8;
         font-family: "Cinzel", serif;
-        font-size: 13px;
-        padding: 5px 0;
+        font-size: 12px;
+        padding: 9px 6px 10px;
+        display: grid;
+        gap: 7px;
+        justify-items: center;
+        align-content: center;
+      }
+
+      .menu-icon-shell {
+        width: 42px;
+        height: 42px;
+        border: 2px solid #887148;
+        border-radius: 6px;
+        background: linear-gradient(180deg, #3a311f, #17120c);
+        display: grid;
+        place-items: center;
+        box-shadow: inset 0 0 0 1px #201a12;
+      }
+
+      .menu-icon-svg {
+        width: 28px;
+        height: 28px;
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.75));
       }
 
       .menu-btn.is-active {
-        color: #ffe3af;
-        box-shadow: inset 0 0 0 1px #ab7c3a;
+        color: #ffd979;
+        box-shadow: inset 0 0 0 1px #d4a44d, 0 0 14px #d4a44d22;
       }
 
       .menu-btn.ghost {
-        font-size: 16px;
+        font-size: 13px;
       }
 
       .menu-btn.icon-btn {
-        display: grid;
-        place-items: center;
-        padding: 5px;
+        padding: 10px 8px 8px;
+      }
+
+      .menu-label {
+        display: block;
+        max-width: 100%;
+        line-height: 1.1;
+        text-align: center;
+        font-size: 11px;
+        letter-spacing: 0.02em;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        text-wrap: balance;
       }
 
       .craft-icon {
@@ -486,23 +696,46 @@
 
       .panel-view {
         display: none;
+        position: absolute;
+        right: 0;
+        bottom: calc(100% + 10px);
+        width: 340px;
+        max-height: min(420px, 58vh);
+        overflow: auto;
+        padding: 12px;
+        background: linear-gradient(180deg, #171615f8, #080808fa);
+        border: 2px solid #6f6248;
+        border-radius: 8px;
+        box-shadow:
+          inset 0 0 0 1px #221f1b,
+          inset 0 0 18px #00000088,
+          0 12px 28px #000000aa;
       }
 
       .panel-view.is-active {
         display: block;
       }
 
+      #panel-map,
+      #panel-map.is-active {
+        display: none;
+      }
+
       #minimap {
-        min-height: 176px;
+        width: 224px;
+        min-width: 224px;
+        min-height: 224px;
         aspect-ratio: 1 / 1;
-        border-radius: 7px;
-        border: 1px solid #503119;
+        border-radius: 4px;
+        border: 2px solid #5b544b;
         background:
-          linear-gradient(180deg, #09110cb3, #04060399),
+          linear-gradient(180deg, #101716d8, #070807cc),
           url("/maps/starter_town/preview.png") center / cover no-repeat;
         position: relative;
         overflow: hidden;
-        box-shadow: inset 0 0 0 1px #1b120b, inset 0 0 26px #00000088;
+        box-shadow:
+          inset 0 0 0 1px #111,
+          inset 0 0 42px #000000bb;
       }
 
       #minimap::before {
@@ -520,40 +753,88 @@
       #minimap::after {
         content: "Aldeia Inicial";
         position: absolute;
-        left: 9px;
-        bottom: 8px;
-        padding: 3px 7px;
-        border: 1px solid #8f6d35;
-        border-radius: 999px;
-        background: #1c120bdd;
-        color: #f7ddb0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 10px 12px 12px;
+        border-top: 2px solid #5b544b;
+        background: linear-gradient(180deg, #121212f2, #090909fa);
+        color: #f4f0e7;
         font-family: "Cinzel", serif;
-        font-size: 11px;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
+        font-size: 17px;
+        letter-spacing: 0.02em;
+        text-align: center;
         pointer-events: none;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 8px #ffe56688;
+        }
+        50% {
+          box-shadow: 0 0 18px #ffe566cc;
+        }
       }
 
       #minimap-marker {
         position: absolute;
-        width: 10px;
-        height: 10px;
+        width: 12px;
+        height: 12px;
         left: 50%;
         top: 50%;
-        margin-left: -5px;
-        margin-top: -5px;
+        transform: translate(-50%, -50%);
         border-radius: 50%;
-        background: #ffe25a;
+        background: #ffe566;
         border: 1px solid #2b1f0d;
-        box-shadow: 0 0 10px #ffe25a88;
+        box-shadow: 0 0 14px #ffe56688;
+        animation: pulse 1.8s ease-in-out infinite;
         z-index: 1;
       }
 
       #minimap-pos {
-        margin-top: 5px;
+        margin-top: 6px;
         font-size: 10px;
-        color: #ebd5ae;
+        color: #90846b;
         text-align: right;
+        font-family: "IBM Plex Mono", monospace;
+      }
+
+      .minimap-corner-btn {
+        position: absolute;
+        z-index: 2;
+        width: 24px;
+        height: 24px;
+        border: 2px solid #8f7442;
+        border-radius: 4px;
+        background: linear-gradient(180deg, #41361f, #211b11);
+        color: #f0d9a3;
+        display: grid;
+        place-items: center;
+        font-family: "Cinzel", serif;
+        font-size: 18px;
+        line-height: 1;
+        box-shadow: 0 2px 6px #00000066;
+      }
+
+      .minimap-corner-btn.top-left {
+        top: 8px;
+        left: 8px;
+      }
+
+      .minimap-corner-btn.top-right {
+        top: 8px;
+        right: 8px;
+      }
+
+      .minimap-corner-btn.bottom-left {
+        bottom: 54px;
+        left: 8px;
+      }
+
+      .minimap-corner-btn.bottom-right {
+        bottom: 54px;
+        right: 8px;
       }
 
       .small-list {
@@ -891,94 +1172,232 @@
         color: #f1dfba;
       }
 
-      .slot.active {
-        box-shadow: inset 0 0 0 1px #ab7c3a, 0 0 10px #cc8f2f55;
-      }
-
       #hud-chat {
         position: absolute;
-        left: 10px;
-        bottom: 10px;
-        width: min(520px, calc(100% - 330px));
-        min-width: 330px;
-        padding: 6px;
+        left: 14px;
+        bottom: 14px;
+        width: 408px;
+        height: 292px;
+        max-height: 292px;
+        padding: 10px 10px 9px;
+        display: flex;
+        flex-direction: column;
+        background: linear-gradient(180deg, #171615f8, #080808fa);
+        border-radius: 6px;
       }
 
-      .chat-tabs {
+      #chat-tabs {
         display: flex;
-        gap: 5px;
-        margin-bottom: 5px;
+        gap: 0;
+        margin-bottom: 6px;
+        align-items: stretch;
       }
 
       .chat-tab {
-        border: 1px solid #5d3d21;
-        border-radius: 5px;
-        background: linear-gradient(180deg, #5b3420, #2d1a0f);
-        color: #e6bf84;
-        padding: 3px 8px;
+        flex: 1;
+        border: 2px solid #5c564e;
+        border-right-width: 1px;
+        border-radius: 0;
+        background: linear-gradient(#1f1f1f, #0d0d0d);
+        color: #8f8a80;
+        padding: 8px 0;
         font-family: "Cinzel", serif;
-        font-size: 12px;
+        font-size: 13px;
+        cursor: pointer;
+        text-align: center;
+      }
+
+      .chat-tab:first-child {
+        border-top-left-radius: 6px;
+      }
+
+      .chat-tab:last-child {
+        border-right-width: 2px;
+        border-top-right-radius: 6px;
+      }
+
+      .chat-tab.is-active {
+        background: linear-gradient(#25231f, #12110f);
+        color: #ead284;
+        border-bottom-color: #23201c;
+        box-shadow: inset 0 -3px 0 #c39d45;
       }
 
       #chat-log {
-        height: 98px;
-        border: 1px solid #6b4927;
-        border-radius: 6px;
-        padding: 6px;
-        background: linear-gradient(180deg, #180f0ae6, #0f0905f2);
-        overflow: hidden;
-        display: grid;
-        gap: 3px;
-        font-size: 11px;
+        border: 2px solid #5b544b;
+        border-radius: 4px;
+        padding: 10px 12px;
+        background: linear-gradient(180deg, #101010f0, #080808fa);
+        overflow-y: auto;
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 6px;
+        min-height: 0;
+        font-size: 13px;
+        line-height: 1.45;
+        scrollbar-width: thin;
+        scrollbar-color: #605947 #0f0f0f;
+        box-shadow: inset 0 0 20px #00000099;
       }
 
-      .chat-line.system {
-        color: #f2ca67;
+      #chat-log::-webkit-scrollbar {
+        width: 8px;
       }
 
-      .chat-line.player {
-        color: #b9ffa4;
+      #chat-log::-webkit-scrollbar-track {
+        background: #0f0f0f;
       }
 
-      .chat-line.loot {
-        color: #8dd2ff;
+      #chat-log::-webkit-scrollbar-thumb {
+        background: #605947;
+        border-radius: 999px;
+      }
+
+      .chat-line {
+        font-family: "IBM Plex Mono", monospace;
+        text-shadow: 0 1px 0 #000;
+      }
+
+      .msg-global {
+        color: #f0e5cb;
+      }
+
+      .msg-grupo {
+        color: #55baf9;
+      }
+
+      .msg-guild {
+        color: #7ad56a;
+      }
+
+      .msg-sistema {
+        color: #f0cd60;
       }
 
       #chat-input-row {
-        margin-top: 5px;
+        margin-top: 8px;
         display: grid;
-        grid-template-columns: 1fr 50px;
-        gap: 5px;
+        grid-template-columns: 1fr 58px;
+        gap: 6px;
       }
 
       #chat-input {
-        border: 1px solid #715028;
-        border-radius: 6px;
-        background: #0f0b08f2;
-        color: #f4dfbe;
-        padding: 6px 9px;
+        border: 2px solid #5b544b;
+        border-radius: 4px;
+        background: #0d0d0df2;
+        color: #d2c8b0;
+        padding: 8px 10px;
         font: inherit;
-        font-size: 11px;
+        font-size: 12px;
+        opacity: 0.88;
       }
 
       #chat-lang {
-        border: 1px solid #715028;
-        border-radius: 6px;
-        background: linear-gradient(180deg, #1f3f1b, #13280f);
-        color: #c7ff98;
+        border: 2px solid #8f7442;
+        border-radius: 4px;
+        background: linear-gradient(180deg, #4a3e24, #251d11);
+        color: #f0d9a3;
         font-weight: 700;
-        font-size: 11px;
+        font-size: 12px;
       }
 
       #hud-hotbar {
         position: absolute;
-        right: 10px;
-        bottom: 10px;
-        width: 286px;
-        padding: 6px;
+        bottom: 14px;
+        left: 50%;
+        transform: translateX(-50%);
         display: grid;
-        grid-template-columns: repeat(8, minmax(0, 1fr));
-        gap: 5px;
+        grid-template-columns: repeat(6, 52px);
+        gap: 6px;
+        justify-content: center;
+        padding: 10px;
+        border: 2px solid #6f6248;
+        border-radius: 6px;
+        background: linear-gradient(180deg, #171615f8, #080808fa);
+        box-shadow:
+          inset 0 0 0 1px #23201c,
+          inset 0 0 18px #00000099,
+          0 10px 20px #00000088;
+      }
+
+      .hotbar-slot {
+        width: 52px;
+        height: 52px;
+        border: 2px solid #5d564d;
+        border-radius: 4px;
+        background: linear-gradient(180deg, #171717, #080808);
+        box-shadow: inset 0 0 0 1px #0c0c0c, 0 2px 6px #00000066;
+        position: relative;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        flex: 0 0 auto;
+        overflow: hidden;
+      }
+
+      .hotbar-slot:hover {
+        border-color: #cfaf6a;
+        box-shadow: inset 0 0 0 1px #23201c, 0 0 10px #cfaf6a33;
+      }
+
+      .hotbar-slot.is-active {
+        border-color: #e1c056;
+        box-shadow: inset 0 0 0 1px #2e2718, 0 0 14px #e1c05644;
+      }
+
+      .hotbar-slot::before,
+      .hotbar-slot::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        background: #201d19;
+        pointer-events: none;
+      }
+
+      .hotbar-slot::before {
+        width: 1px;
+        height: 24px;
+        transform: translate(-50%, -50%);
+      }
+
+      .hotbar-slot::after {
+        width: 24px;
+        height: 1px;
+        transform: translate(-50%, -50%);
+      }
+
+      .hotbar-slot:has(.hotbar-icon:not([hidden]))::before,
+      .hotbar-slot:has(.hotbar-icon:not([hidden]))::after {
+        opacity: 0;
+      }
+
+      .hotbar-key {
+        position: absolute;
+        top: 3px;
+        left: 4px;
+        font-size: 10px;
+        color: #9d9382;
+        font-family: "IBM Plex Mono", monospace;
+      }
+
+      .hotbar-icon {
+        width: 34px;
+        height: 34px;
+        object-fit: contain;
+        image-rendering: auto;
+        transform: none;
+        filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.7));
+      }
+
+      .hotbar-count {
+        position: absolute;
+        bottom: 3px;
+        right: 4px;
+        font-size: 10px;
+        color: #ead284;
+        font-family: "IBM Plex Mono", monospace;
       }
 
       #interaction-prompt {
@@ -1314,6 +1733,89 @@
         box-shadow: inset 0 0 0 1px #b58a46;
       }
 
+      #npc-panel {
+        position: absolute;
+        left: 50%;
+        top: 108px;
+        transform: translateX(-50%);
+        width: min(640px, calc(100% - 40px));
+        padding: 12px 14px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .npc-panel-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 14px;
+      }
+
+      #npc-panel-name {
+        font-family: "Cinzel", serif;
+        font-size: 22px;
+        color: #ffd79b;
+      }
+
+      #npc-panel-title {
+        margin-top: 3px;
+        font-size: 12px;
+        color: #cdb289;
+      }
+
+      #npc-panel-description {
+        color: #f4ead6;
+        font-size: 13px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+
+      #npc-panel-hint {
+        font-size: 11px;
+        color: #d9c39e;
+      }
+
+      #npc-panel-actions {
+        display: grid;
+        gap: 8px;
+      }
+
+      .npc-action-btn {
+        border: 1px solid #6a4424;
+        border-radius: 8px;
+        background: linear-gradient(180deg, #4a2b18, #23140b);
+        color: #f0d7aa;
+        padding: 10px 12px;
+        display: grid;
+        gap: 4px;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .npc-action-btn.is-muted {
+        opacity: 0.72;
+      }
+
+      .npc-action-btn.is-danger {
+        border-color: #8b4a3a;
+        background: linear-gradient(180deg, #5a241c, #28110d);
+        color: #ffd0c2;
+      }
+
+      .npc-action-btn:disabled {
+        cursor: not-allowed;
+      }
+
+      .npc-action-title {
+        font-family: "Cinzel", serif;
+        font-size: 15px;
+      }
+
+      .npc-action-description {
+        font-size: 11px;
+        color: #d9c29d;
+      }
+
       #death-modal {
         position: absolute;
         left: 50%;
@@ -1541,13 +2043,12 @@
       }
 
       @media (max-width: 980px) {
-        #hud-right,
-        #hud-hotbar {
-          width: 250px;
+        #hud-right {
+          width: 276px;
         }
 
         #hud-chat {
-          width: min(420px, calc(100% - 270px));
+          width: min(408px, calc(100% - 28px));
         }
 
         #settings-modal {
@@ -1561,14 +2062,23 @@
           display: none;
         }
 
+        #hud-root #hud-minimap {
+          display: none;
+        }
+
         #hud-hotbar {
-          width: calc(100% - 20px);
-          grid-template-columns: repeat(4, minmax(0, 1fr));
+          left: 10px;
+          right: 10px;
+          transform: none;
+          overflow-x: auto;
+          justify-content: flex-start;
+          padding-bottom: 4px;
         }
 
         #interaction-prompt,
         #action-progress,
         #dialogue-box,
+        #npc-panel,
         #crafting-panel {
           width: calc(100% - 20px);
         }
@@ -1688,19 +2198,25 @@
           <div class="portrait" aria-hidden="true"><span id="hud-avatar-initial">H</span></div>
           <div class="party-meta">
             <div class="party-head">
-              <span id="hud-char" class="party-name">Hero</span>
-              <span class="party-badges">
-                <span id="hud-level" class="party-level">Lv 1</span>
-                <span id="hud-class" class="party-class">warrior</span>
-              </span>
+              <div class="party-title">
+                <span id="hud-char" class="party-name">Hero</span>
+                <span id="hud-level" class="party-level">Nv. 1</span>
+              </div>
+              <span id="hud-class" class="party-class">warrior</span>
             </div>
-            <div class="resource-bar" aria-label="Health">
-              <div id="hud-hp-fill" class="resource-fill hp" style="width: 100%"></div>
+            <div class="party-resource-row">
+              <span class="resource-icon hp" aria-hidden="true"></span>
+              <div class="resource-bar resource-health" data-label="HP" aria-label="Health">
+                <div id="hud-hp-fill" class="resource-fill hp" style="width: 100%"></div>
+              </div>
             </div>
-            <div class="resource-bar" aria-label="Energy">
-              <div id="hud-mp-fill" class="resource-fill mp" style="width: 100%"></div>
+            <div class="party-resource-row">
+              <span class="resource-icon mp" aria-hidden="true"></span>
+              <div class="resource-bar resource-mana" data-label="MP" aria-label="Energy">
+                <div id="hud-mp-fill" class="resource-fill mp" style="width: 100%"></div>
+              </div>
             </div>
-            <div class="resource-bar" aria-label="Experience">
+            <div class="resource-bar resource-exp" aria-label="Experience">
               <div id="hud-exp-fill" class="resource-fill exp" style="width: 0%"></div>
             </div>
             <div class="resource-text">
@@ -1711,20 +2227,88 @@
           </div>
         </section>
 
+        <section id="hud-minimap" class="hud-panel">
+          <div id="minimap">
+            <button class="minimap-corner-btn top-left" type="button" tabindex="-1">+</button>
+            <button class="minimap-corner-btn top-right" type="button" tabindex="-1">+</button>
+            <button class="minimap-corner-btn bottom-left" type="button" tabindex="-1">-</button>
+            <button class="minimap-corner-btn bottom-right" type="button" tabindex="-1">-</button>
+            <div id="minimap-marker"></div>
+          </div>
+          <div id="minimap-pos">x: -- | y: --</div>
+        </section>
+
         <aside id="hud-right" class="hud-panel">
           <div class="menu-row">
-            <button class="menu-btn is-active" data-panel-btn="map" type="button">Mapa</button>
-            <button class="menu-btn" data-panel-btn="stats" type="button">Stats</button>
-            <button class="menu-btn" data-panel-btn="bag" type="button">Bag</button>
-            <button id="crafting-menu-btn" class="menu-btn icon-btn" type="button" aria-label="Crafting">
-              <span class="craft-icon" aria-hidden="true"></span>
+            <button class="menu-btn is-active" data-panel-btn="bag" type="button">
+              <span class="menu-icon-shell">
+                <svg class="menu-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M7 8h10l1 10H6z" fill="#7d4c2b" stroke="#d9bf85" stroke-width="1.4" />
+                  <path d="M8 8V6.5C8 5 9.1 4 10.4 4h3.2C14.9 4 16 5 16 6.5V8" fill="none" stroke="#d9bf85" stroke-width="1.4" />
+                  <path d="M6.7 11.2h10.6" stroke="#f1e4b8" stroke-width="1.2" />
+                  <rect x="11" y="11" width="2" height="4" rx="0.8" fill="#f1e4b8" />
+                </svg>
+              </span>
+              <span class="menu-label">Inventário</span>
             </button>
-            <button id="settings-open" class="menu-btn ghost" type="button">?</button>
+            <button class="menu-btn" data-panel-btn="stats" type="button">
+              <span class="menu-icon-shell">
+                <svg class="menu-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 6.5C4 5.7 4.7 5 5.5 5H11v13H5.8A1.8 1.8 0 0 1 4 16.2z" fill="#f0e4c2" stroke="#d0b372" stroke-width="1.2"/>
+                  <path d="M20 6.5c0-.8-.7-1.5-1.5-1.5H13v13h5.2a1.8 1.8 0 0 0 1.8-1.8z" fill="#e6d4a6" stroke="#d0b372" stroke-width="1.2"/>
+                  <path d="M12 5v13" stroke="#8e5e3b" stroke-width="1.2"/>
+                  <path d="M6.5 8.2h2.8M14.7 8.2h2.8" stroke="#8e5e3b" stroke-width="1"/>
+                </svg>
+              </span>
+              <span class="menu-label">Habilidades</span>
+            </button>
+            <button class="menu-btn" data-panel-btn="map" type="button">
+              <span class="menu-icon-shell">
+                <svg class="menu-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 6l5-1.5 6 2 5-1.5V18l-5 1.5-6-2L4 19z" fill="#e4d4aa" stroke="#c8aa69" stroke-width="1.2"/>
+                  <path d="M9 4.5v13M15 6.5v13" stroke="#94714a" stroke-width="1.1"/>
+                  <path d="M7.5 9.5l1.8 1.7 2-2.4 2.1 2.1 2.9-1.7" fill="none" stroke="#6b8c58" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span class="menu-label">Mapa</span>
+            </button>
+            <button id="crafting-menu-btn" class="menu-btn icon-btn" type="button" aria-label="Crafting">
+              <span class="menu-icon-shell">
+                <svg class="menu-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 5.5h10.5A1.5 1.5 0 0 1 18 7v9.5H7.5A1.5 1.5 0 0 1 6 15z" fill="#e7d7b2" stroke="#c7ab6d" stroke-width="1.2"/>
+                  <path d="M7.5 5.5V4.6C7.5 4 8 3.5 8.6 3.5h8.2" fill="none" stroke="#c7ab6d" stroke-width="1.2"/>
+                  <path d="M8.5 9h7M8.5 11.8h7M8.5 14.6h4.5" stroke="#8f6a47" stroke-width="1"/>
+                </svg>
+              </span>
+              <span class="menu-label">Missões</span>
+            </button>
+            <button id="guild-menu-btn" class="menu-btn" type="button" aria-label="Guilda">
+              <span class="menu-icon-shell">
+                <svg class="menu-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 4l6 2.4v5.3c0 4.1-2.4 6.8-6 8.3-3.6-1.5-6-4.2-6-8.3V6.4z" fill="#caa54a" stroke="#f1dfad" stroke-width="1.2"/>
+                  <path d="M12 5.8v11.7" stroke="#8d6f32" stroke-width="1.1"/>
+                  <path d="M8.2 10.2H15.8" stroke="#f1dfad" stroke-width="1.1"/>
+                </svg>
+              </span>
+              <span class="menu-label">Guilda</span>
+            </button>
+            <button id="settings-open" class="menu-btn ghost" type="button">
+              <span class="menu-icon-shell">
+                <svg class="menu-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="3.2" fill="#d6d7dd" stroke="#f2f3f7" stroke-width="1.1"/>
+                  <path d="M12 4.5v2M12 17.5v2M19.5 12h-2M6.5 12h-2M17.3 6.7l-1.4 1.4M8.1 15.9l-1.4 1.4M17.3 17.3l-1.4-1.4M8.1 8.1L6.7 6.7" stroke="#d6d7dd" stroke-width="1.6" stroke-linecap="round"/>
+                  <circle cx="12" cy="12" r="6.5" fill="none" stroke="#9a9da7" stroke-width="1.2"/>
+                </svg>
+              </span>
+              <span class="menu-label">Configurações</span>
+            </button>
           </div>
 
           <section id="panel-map" class="panel-view is-active">
-            <div id="minimap"><div id="minimap-marker"></div></div>
-            <div id="minimap-pos">x: -- | y: --</div>
+            <div class="small-list">
+              <div>Aldeia Inicial</div>
+              <div>O minimapa fixo fica acima deste painel quando a aba Mapa estiver ativa.</div>
+            </div>
           </section>
 
           <section id="panel-stats" class="panel-view">
@@ -1739,8 +2323,11 @@
               <div class="stats-grid">
                 <div class="stats-row"><span>Vida Maxima</span><span id="stats-max-health">--</span></div>
                 <div class="stats-row"><span>Ataque</span><span id="stats-attack">--</span></div>
+                <div class="stats-row"><span>Poder</span><span id="stats-power">--</span></div>
                 <div class="stats-row"><span>Defesa</span><span id="stats-defense">--</span></div>
                 <div class="stats-row"><span>Velocidade</span><span id="stats-speed">--</span></div>
+                <div class="stats-row"><span>Critico</span><span id="stats-crit">--</span></div>
+                <div class="stats-row"><span>Esquiva</span><span id="stats-dodge">--</span></div>
               </div>
 
               <div class="stats-runes-head">
@@ -1763,9 +2350,12 @@
                   Equipamento
                 </button>
               </div>
-              <button id="crafting-open" class="menu-btn icon-btn" type="button" aria-label="Crafting">
-                <span class="craft-icon" aria-hidden="true"></span>
-              </button>
+              <div style="display: inline-flex; gap: 6px">
+                <button id="bag-use-potion" class="menu-btn" type="button">Sem pocoes</button>
+                <button id="crafting-open" class="menu-btn icon-btn" type="button" aria-label="Crafting">
+                  <span class="craft-icon" aria-hidden="true"></span>
+                </button>
+              </div>
             </div>
             <div id="inventory-summary" class="bag-summary" style="margin-bottom: 8px">Bolsa vazia</div>
 
@@ -1795,16 +2385,17 @@
         </aside>
 
         <section id="hud-chat" class="hud-panel">
-          <div class="chat-tabs" aria-hidden="true">
-            <div class="chat-tab">Local</div>
-            <div class="chat-tab">Party</div>
-            <div class="chat-tab">Guild</div>
+          <div id="chat-tabs">
+            <button class="chat-tab is-active" data-ch="global" type="button">Global</button>
+            <button class="chat-tab" data-ch="grupo" type="button">Grupo</button>
+            <button class="chat-tab" data-ch="guild" type="button">Guild</button>
+            <button class="chat-tab" data-ch="sistema" type="button">Sistema</button>
           </div>
           <div id="chat-log" aria-live="polite">
-            <div class="chat-line system">Welcome to Myth Rune!</div>
-            <div class="chat-line loot">Você recebeu 150 gold.</div>
-            <div class="chat-line player">[Party] Mage: dano doido</div>
-            <div class="chat-line system">Dica: use Space para atacar.</div>
+            <div class="chat-line msg-sistema">[Sistema] Welcome to Myth Rune!</div>
+            <div class="chat-line msg-global">[Global] Você recebeu 150 gold.</div>
+            <div class="chat-line msg-grupo">[Grupo] Mage: dano doido</div>
+            <div class="chat-line msg-sistema">[Sistema] Dica: use Space para atacar.</div>
           </div>
           <div id="chat-input-row">
             <input id="chat-input" value="Chat desativado nesta build" readonly tabindex="-1" />
@@ -1856,6 +2447,19 @@
           </div>
         </aside>
 
+        <aside id="npc-panel" class="hud-panel" hidden aria-live="polite">
+          <div class="npc-panel-head">
+            <div>
+              <div id="npc-panel-name"></div>
+              <div id="npc-panel-title"></div>
+            </div>
+            <button id="npc-panel-close" class="dialogue-btn" type="button">Fechar</button>
+          </div>
+          <div id="npc-panel-description"></div>
+          <div id="npc-panel-hint"></div>
+          <div id="npc-panel-actions"></div>
+        </aside>
+
         <aside id="death-modal" class="hud-panel" hidden aria-live="assertive">
           <div class="death-title">Voce Morreu</div>
           <div id="death-modal-text">
@@ -1888,25 +2492,77 @@
         </aside>
 
         <section id="hud-hotbar" class="hud-panel" aria-label="Skill bar">
-          <div class="slot active">1</div>
-          <div class="slot">2</div>
-          <div class="slot">3</div>
-          <div class="slot">4</div>
-          <div class="slot">5</div>
-          <div class="slot">6</div>
-          <div class="slot">7</div>
-          <div class="slot">8</div>
+          <div class="hotbar-slot is-active" data-slot="1">
+            <span class="hotbar-key">1</span>
+            <img class="hotbar-icon" src="" alt="" hidden />
+            <span class="hotbar-count"></span>
+          </div>
+          <div class="hotbar-slot" data-slot="2">
+            <span class="hotbar-key">2</span>
+            <img class="hotbar-icon" src="" alt="" hidden />
+            <span class="hotbar-count"></span>
+          </div>
+          <div class="hotbar-slot" data-slot="3">
+            <span class="hotbar-key">3</span>
+            <img class="hotbar-icon" src="" alt="" hidden />
+            <span class="hotbar-count"></span>
+          </div>
+          <div class="hotbar-slot" data-slot="4">
+            <span class="hotbar-key">4</span>
+            <img class="hotbar-icon" src="" alt="" hidden />
+            <span class="hotbar-count"></span>
+          </div>
+          <div class="hotbar-slot" data-slot="5">
+            <span class="hotbar-key">5</span>
+            <img class="hotbar-icon" src="" alt="" hidden />
+            <span class="hotbar-count"></span>
+          </div>
+          <div class="hotbar-slot" data-slot="6">
+            <span class="hotbar-key">6</span>
+            <img class="hotbar-icon" src="" alt="" hidden />
+            <span class="hotbar-count"></span>
+          </div>
+          <div class="hotbar-slot" data-slot="7">
+            <span class="hotbar-key">7</span>
+            <img class="hotbar-icon" src="" alt="" hidden />
+            <span class="hotbar-count"></span>
+          </div>
+          <div class="hotbar-slot" data-slot="8">
+            <span class="hotbar-key">8</span>
+            <img class="hotbar-icon" src="" alt="" hidden />
+            <span class="hotbar-count"></span>
+          </div>
+          <div class="hotbar-slot" data-slot="9">
+            <span class="hotbar-key">9</span>
+            <img class="hotbar-icon" src="" alt="" hidden />
+            <span class="hotbar-count"></span>
+          </div>
+          <div class="hotbar-slot" data-slot="10">
+            <span class="hotbar-key">0</span>
+            <img class="hotbar-icon" src="" alt="" hidden />
+            <span class="hotbar-count"></span>
+          </div>
+          <div class="hotbar-slot" data-slot="11">
+            <span class="hotbar-key">-</span>
+            <img class="hotbar-icon" src="" alt="" hidden />
+            <span class="hotbar-count"></span>
+          </div>
+          <div class="hotbar-slot" data-slot="12">
+            <span class="hotbar-key">=</span>
+            <img class="hotbar-icon" src="" alt="" hidden />
+            <span class="hotbar-count"></span>
+          </div>
         </section>
 
         <aside id="settings-modal" class="hud-panel" hidden>
           <h3 class="cfg-title">Configurações</h3>
           <label class="cfg-row" for="cfg-hud-scale">
             Escala da HUD
-            <input id="cfg-hud-scale" type="range" min="0.6" max="1" step="0.02" value="0.78" />
+            <input id="cfg-hud-scale" type="range" min="0.6" max="1" step="0.02" value="1" />
           </label>
           <label class="cfg-row" for="cfg-hud-opacity">
             Opacidade da HUD
-            <input id="cfg-hud-opacity" type="range" min="0.7" max="1" step="0.02" value="0.94" />
+            <input id="cfg-hud-opacity" type="range" min="0.7" max="1" step="0.02" value="1" />
           </label>
           <label class="cfg-check" for="cfg-show-chat">
             <input id="cfg-show-chat" type="checkbox" checked /> Exibir chat

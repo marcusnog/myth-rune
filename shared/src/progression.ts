@@ -22,6 +22,9 @@ export interface DerivedCharacterStats {
   defense: number;
   moveSpeed: number;
   worldMoveSpeed: number;
+  power: number;
+  critChance: number;
+  dodgeChance: number;
 }
 
 export interface ProgressionRuneView extends RuneDefinition {
@@ -105,6 +108,9 @@ export function derivedStatsForCharacter(
   const levelDelta = Math.max(0, level - 1);
   const moveSpeed =
     base.moveSpeed + levelDelta * 0.04 + bonus.moveSpeed + equipBonus.moveSpeed;
+  const power = base.power + Math.floor(levelDelta * 1.1);
+  const critChance = Math.min(0.5, base.critChance + levelDelta * 0.004);
+  const dodgeChance = Math.min(0.35, base.dodgeChance + levelDelta * 0.003);
 
   return {
     maxHealth: base.maxHealth + levelDelta * 8 + bonus.maxHealth + equipBonus.maxHealth,
@@ -113,6 +119,9 @@ export function derivedStatsForCharacter(
       base.defense + Math.floor(levelDelta * 1.2) + bonus.defense + equipBonus.defense,
     moveSpeed,
     worldMoveSpeed: moveSpeedToWorldUnits(moveSpeed),
+    power,
+    critChance,
+    dodgeChance,
   };
 }
 

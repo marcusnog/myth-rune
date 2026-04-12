@@ -1,16 +1,18 @@
 import type pg from "pg";
-import type { CharacterClassId } from "@myth-of-rune/shared";
+import type { CharacterClassId, MapId } from "@myth-of-rune/shared";
 
 export interface CharacterRow {
   id: string;
+  user_id: string;
   name: string;
   character_class: CharacterClassId;
-  map_id: string;
+  map_id: MapId;
   x: number;
   y: number;
   health: number;
   inventory: Record<string, number>;
   equipment: Record<string, string | null>;
+  quest_state: Record<string, unknown>;
 }
 
 export async function getCharacterById(
@@ -18,7 +20,7 @@ export async function getCharacterById(
   id: string,
 ): Promise<CharacterRow | null> {
   const r = await client.query<CharacterRow>(
-    `SELECT id, name, character_class, map_id, x, y, health, inventory, equipment
+    `SELECT id, user_id, name, character_class, map_id, x, y, health, inventory, equipment, quest_state
      FROM characters WHERE id = $1`,
     [id],
   );
@@ -67,5 +69,29 @@ export async function updateHealth(
   await client.query(`UPDATE characters SET health = $2 WHERE id = $1`, [
     characterId,
     health,
+  ]);
+}
+
+export async function updateMapPosition(
+  client: pg.PoolClient,
+  characterId: string,
+  mapId: MapId,
+  x: number,
+  y: number,
+): Promise<void> {
+  await client.query(
+    `UPDATE characters SET map_id = $2, x = $3, y = $4 WHERE id = $1`,
+    [characterId, mapId, x, y],
+  );
+}
+
+export async function updateQuestState(
+  client: pg.PoolClient,
+  characterId: string,
+  questState: unknown,
+): Promise<void> {
+  await client.query(`UPDATE characters SET quest_state = $2 WHERE id = $1`, [
+    characterId,
+    JSON.stringify(questState),
   ]);
 }

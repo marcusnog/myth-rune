@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CharacterClass } from "../character.js";
+import { mapIdSchema, positionSchema } from "./common.js";
 
 const characterClassSchema = z.enum([
   CharacterClass.Warrior,
@@ -29,8 +30,8 @@ export const authCharacterSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   characterClass: characterClassSchema,
-  mapId: z.string(),
-  position: z.object({ x: z.number(), y: z.number() }),
+  mapId: mapIdSchema,
+  position: positionSchema,
   health: z.number().int().nonnegative(),
 });
 

@@ -1,0 +1,2 @@
+ALTER TABLE characters
+  ADD COLUMN IF NOT EXISTS quest_state JSONB NOT NULL DEFAULT '{}';

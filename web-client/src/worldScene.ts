@@ -1,8 +1,13 @@
 import Phaser from "phaser";
 import {
-  type GatherResourceType,
+  MAP_DEFINITIONS,
+  QUEST_DEFINITIONS,
+  getPortalForPosition,
+  playerAttackProfileForClass,
   type ProgressionSnapshot,
   type RuneId,
+  type MapId,
+  type SkillId,
   worldMoveSpeedForClass,
   type CharacterClassId,
   worldServerMessageSchema,
@@ -18,8 +23,9 @@ import type {
   ActionProgressView,
   CraftingPanelView,
   InventorySlotView,
+  NpcPanelView as HudNpcPanelView,
 } from "./ui/hudModels";
-import { ITEM_DEFINITIONS, ITEM_IDS, type ItemId } from "./data/items";
+import { ITEM_DEFINITIONS, type ItemId } from "./data/items";
 import { CraftingSystem } from "./systems/crafting/craftingSystem";
 import type { ResourceNodeEntity } from "./entities/resourceNodes/resourceNode";
 import { GatheringSystem } from "./systems/gathering/gatheringSystem";
@@ -40,6 +46,7 @@ import {
 import {
   VISUAL_SPECS,
   KNOWN_PLAYER_VISUALS,
+  type Facing,
   type PlayerVisualKey,
   type VisualKey,
 } from "./data/sprites";
@@ -48,6 +55,9 @@ import {
   type RenderedEntity,
 } from "./systems/rendering/entityRenderer";
 import { WeatherSystem, type WeatherType } from "./systems/weather/weatherSystem";
+import { BiomeSystem, type BiomeType } from "./systems/biome/biomeSystem";
+import { SkillSystem } from "./systems/skills/skillSystem";
+import { FootstepSystem } from "./systems/footstep/footstepSystem";
 
 type LootDropPayload = Extract<
   WorldServerMessage,
@@ -85,6 +95,8 @@ interface HudBindings {
   pushFeedMessage: (text: string, tone?: "system" | "loot" | "player") => void;
   openDialogue: (speaker: string, text: string, step: number, total: number) => void;
   closeDialogue: () => void;
+  setNpcPanel: (view: HudNpcPanelView) => void;
+  closeNpcPanel: () => void;
   openDeathModal: (message: string) => void;
   closeDeathModal: () => void;
 }
@@ -112,6 +124,10 @@ interface DialogueState {
   lineIndex: number;
 }
 
+interface NpcPanelState {
+  npcId: string;
+}
+
 type WelcomePayload = Extract<WorldServerMessage, { type: "welcome" }>["payload"];
 type StatePayload = Extract<WorldServerMessage, { type: "state" }>["payload"];
 type CombatEventPayload = Extract<
@@ -126,6 +142,17 @@ const STATUS_RESET_MS = 900;
 const LOCAL_HARD_RECONCILE_DISTANCE = 220;
 const LOCAL_SOFT_RECONCILE_DISTANCE = 10;
 const LOCAL_SOFT_RECONCILE_RATE = 12;
+const FOOT_PROBES: ReadonlyArray<readonly [number, number]> = [
+  [0, 8],
+  [-7, 8],
+  [7, 8],
+  [0, 12],
+  [-10, 12],
+  [10, 12],
+  [0, 16],
+  [-10, 16],
+  [10, 16],
+];
 
 const COLOR_DAMAGE_ENEMY = "#ffdf5f";
 const COLOR_DAMAGE_PLAYER = "#ff7b7b";
@@ -160,6 +187,7 @@ export class WorldScene extends Phaser.Scene {
   private entityRenderer!: EntityRenderer;
 
   private localId = "";
+  private currentMapId: MapId = "default";
   private staticNpcEntities = new Map<string, StaticNpcEntity>();
 
   private moveKeys!: {
@@ -190,11 +218,16 @@ export class WorldScene extends Phaser.Scene {
   private authoritativeLocalY = 0;
   private focusedNpcId: string | null = null;
   private dialogueState: DialogueState | null = null;
+  private npcPanelState: NpcPanelState | null = null;
   private readonly lootDrops = new Map<string, LootDropEntity>();
   private inventory!: InventoryStore;
   private craftingSystem!: CraftingSystem;
   private gatheringSystem: GatheringSystem | null = null;
   private weatherSystem: WeatherSystem | null = null;
+  private biomeSystem: BiomeSystem | null = null;
+  private skillSystem: SkillSystem | null = null;
+  private footstepSystem: FootstepSystem | null = null;
+  private skillKey!: Phaser.Input.Keyboard.Key;
   private inventoryUnsubscribe: (() => void) | null = null;
   private progressionSnapshot: ProgressionSnapshot | null = null;
 
@@ -251,7 +284,6 @@ export class WorldScene extends Phaser.Scene {
     this.inventoryUnsubscribe = this.inventory.subscribe(() => {
       this.syncInventoryHud();
       this.syncCraftingHud();
-      this.sendInventorySync();
     });
 
     this.entityRenderer = new EntityRenderer(this, () => this.worldMinY);
@@ -263,7 +295,29 @@ export class WorldScene extends Phaser.Scene {
     this.createGatheringSystem();
     this.createStaticNpcs();
     this.weatherSystem = new WeatherSystem(this);
-    this.weatherSystem.set("rain");
+    this.biomeSystem = new BiomeSystem(
+      this,
+      this.weatherSystem,
+      this.worldMinX,
+      this.worldMinY,
+      (biome: BiomeType, label: string) => {
+        if (label) {
+          this.setTransientStatus(label);
+          this.initData.hud.pushFeedMessage(`Entrando: ${label}`, "system");
+        } else {
+          this.setTransientStatus("Floresta");
+        }
+      },
+    );
+    this.syncMapPresentation();
+    this.footstepSystem = new FootstepSystem(
+      this,
+      () => this.biomeSystem?.current ?? "forest",
+    );
+    this.skillSystem = new SkillSystem(
+      this.resolveCharacterClass(this.initData.characterClass),
+      this,
+    );
     this.syncInventoryHud();
     this.syncCraftingHud();
     this.initData.hud.setActionProgress(null);
@@ -283,6 +337,7 @@ export class WorldScene extends Phaser.Scene {
     this.interactKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     this.craftKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.C);
     this.cancelKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    this.skillKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
     this.input.on("pointerdown", () => this.requestBasicAttack());
 
     this.cameras.main.setBounds(
@@ -302,6 +357,7 @@ export class WorldScene extends Phaser.Scene {
       this.initData.hud.setActionProgress(null);
       this.initData.hud.setProgression(null);
       this.initData.hud.closeDialogue();
+      this.initData.hud.closeNpcPanel();
       this.initData.hud.closeDeathModal();
       this.entityRenderer.clearGatherAnimation();
       this.craftingSystem.closePanel();
@@ -310,6 +366,12 @@ export class WorldScene extends Phaser.Scene {
       this.gatheringSystem = null;
       this.weatherSystem?.destroy();
       this.weatherSystem = null;
+      this.biomeSystem?.destroy();
+      this.biomeSystem = null;
+      this.skillSystem?.destroy();
+      this.skillSystem = null;
+      this.footstepSystem?.destroy();
+      this.footstepSystem = null;
       this.propBlockers = [];
       this.mapWorld?.propSprites.forEach((sprite) => sprite.destroy());
       this.inventoryUnsubscribe?.();
@@ -331,10 +393,29 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
+    // Update biome zones based on player position
+    this.biomeSystem?.update(
+      this.entityRenderer.local.sprite.x,
+      this.entityRenderer.local.sprite.y,
+    );
+
+    // Update skill system (cooldown + overlay refresh)
+    if (this.skillSystem) {
+      const level = this.progressionSnapshot?.level ?? 1;
+      const justReady = this.skillSystem.update(level);
+      if (justReady) {
+        this.initData.hud.pushFeedMessage(
+          `${this.skillSystem.definition?.name ?? "Habilidade"} pronta!`,
+          "system",
+        );
+      }
+    }
+
     const interactPressed = Phaser.Input.Keyboard.JustDown(this.interactKey);
     const attackPressed = Phaser.Input.Keyboard.JustDown(this.attackKey);
     const craftPressed = Phaser.Input.Keyboard.JustDown(this.craftKey);
     const cancelPressed = Phaser.Input.Keyboard.JustDown(this.cancelKey);
+    const skillPressed = Phaser.Input.Keyboard.JustDown(this.skillKey);
     const movementIntent = this.hasMovementIntent();
 
     this.refreshInteractionUi();
@@ -345,17 +426,29 @@ export class WorldScene extends Phaser.Scene {
     );
 
     if (this.entityRenderer.local.dead) {
+      this.syncLocalFootsteps(0, 0);
       this.initData.hud.setInteractionPrompt(null);
       this.entityRenderer.applyMotionVisual(this.entityRenderer.local, 0, 0, LOCAL_MOVE_THRESHOLD);
       return;
     }
 
     if (this.dialogueState) {
+      this.syncLocalFootsteps(0, 0);
       if (interactPressed) {
         this.advanceDialogue();
       } else if (cancelPressed) {
         this.closeDialogue();
       }
+      this.entityRenderer.applyMotionVisual(this.entityRenderer.local, 0, 0, LOCAL_MOVE_THRESHOLD);
+      return;
+    }
+
+    if (this.npcPanelState) {
+      this.syncLocalFootsteps(0, 0);
+      if (interactPressed || cancelPressed) {
+        this.closeNpcPanel();
+      }
+      this.initData.hud.setInteractionPrompt(null);
       this.entityRenderer.applyMotionVisual(this.entityRenderer.local, 0, 0, LOCAL_MOVE_THRESHOLD);
       return;
     }
@@ -366,6 +459,10 @@ export class WorldScene extends Phaser.Scene {
         this.time.now,
       );
       if (canceled) {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          const msg: WorldClientMessage = { type: "gather_cancel", payload: {} };
+          this.ws.send(JSON.stringify(msg));
+        }
         this.initData.hud.pushFeedMessage(canceled, "system");
         this.setTransientStatus("Coleta cancelada");
       }
@@ -374,6 +471,10 @@ export class WorldScene extends Phaser.Scene {
     if (this.craftingSystem.isBusy() && (movementIntent || attackPressed || cancelPressed)) {
       const canceledRecipe = this.craftingSystem.cancelActiveCraft();
       if (canceledRecipe) {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          const msg: WorldClientMessage = { type: "craft_cancel", payload: {} };
+          this.ws.send(JSON.stringify(msg));
+        }
         this.initData.hud.pushFeedMessage(
           `Craft de ${canceledRecipe} cancelado.`,
           "system",
@@ -385,11 +486,14 @@ export class WorldScene extends Phaser.Scene {
 
     const actionBlocked = this.updateActionSystems(deltaMs);
     if (actionBlocked) {
+      this.syncLocalFootsteps(0, 0);
       this.entityRenderer.applyMotionVisual(this.entityRenderer.local, 0, 0, LOCAL_MOVE_THRESHOLD);
+      this.reconcileLocalPosition(deltaMs / 1000);
       return;
     }
 
     if (this.craftingSystem.isPanelOpen()) {
+      this.syncLocalFootsteps(0, 0);
       if (cancelPressed || craftPressed) {
         this.craftingSystem.closePanel();
         this.syncCraftingHud();
@@ -400,6 +504,7 @@ export class WorldScene extends Phaser.Scene {
     }
 
     if (craftPressed) {
+      this.syncLocalFootsteps(0, 0);
       this.toggleCraftingPanel();
       this.entityRenderer.applyMotionVisual(this.entityRenderer.local, 0, 0, LOCAL_MOVE_THRESHOLD);
       return;
@@ -413,26 +518,60 @@ export class WorldScene extends Phaser.Scene {
           this.inventory,
         );
         if (started?.ok) {
+          if (this.ws && this.ws.readyState === WebSocket.OPEN && started.nodeId && started.resourceType) {
+            const msg: WorldClientMessage = {
+              type: "gather_start",
+              payload: {
+                nodeId: started.nodeId,
+                resourceType: started.resourceType,
+              },
+            };
+            this.ws.send(JSON.stringify(msg));
+          }
           this.setTransientStatus(target.node.definition.actionLabel);
         } else if (started) {
           this.initData.hud.pushFeedMessage(started.message, "system");
           this.setTransientStatus(started.message);
         }
         this.refreshInteractionUi();
+        this.syncLocalFootsteps(0, 0);
         this.entityRenderer.applyMotionVisual(this.entityRenderer.local, 0, 0, LOCAL_MOVE_THRESHOLD);
         return;
       }
       if (target?.kind === "npc") {
-        this.openDialogue(target.npc);
+        this.syncLocalFootsteps(0, 0);
+        if (target.npc.spec.interactionMode === "panel") {
+          this.openNpcPanel(target.npc);
+        } else {
+          this.openDialogue(target.npc);
+        }
         return;
       }
       if (target?.kind === "loot") {
+        this.syncLocalFootsteps(0, 0);
         this.tryPickupLoot(target.dropId);
+        return;
+      }
+      if (target?.kind === "portal") {
+        this.syncLocalFootsteps(0, 0);
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          const msg: WorldClientMessage = {
+            type: "change_map",
+            payload: { portalId: target.portalId },
+          };
+          this.ws.send(JSON.stringify(msg));
+          this.setTransientStatus("Transitando...");
+        }
         return;
       }
     }
 
+    if (skillPressed) {
+      this.requestSkillUse();
+    }
+
     const velocity = this.handleLocalMovement(deltaMs / 1000);
+    this.syncLocalFootsteps(velocity.vx, velocity.vy);
     this.entityRenderer.applyMotionVisual(
       this.entityRenderer.local,
       velocity.vx,
@@ -459,6 +598,35 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
     this.closeDialogue();
+  }
+
+  public closeNpcPanelFromHud(): void {
+    if (!this.npcPanelState) {
+      return;
+    }
+    this.closeNpcPanel();
+  }
+
+  public performNpcActionFromHud(actionId: string): void {
+    if (!this.npcPanelState || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    const msg: WorldClientMessage = {
+      type: "npc_action",
+      payload: { npcId: this.npcPanelState.npcId, actionId },
+    };
+    this.ws.send(JSON.stringify(msg));
+  }
+
+  public useItemFromHud(itemId: ItemId): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    const msg: WorldClientMessage = {
+      type: "use_item",
+      payload: { itemId },
+    };
+    this.ws.send(JSON.stringify(msg));
   }
 
   public toggleCraftingFromHud(): void {
@@ -509,11 +677,16 @@ export class WorldScene extends Phaser.Scene {
   }
 
   public craftSelectedRecipeFromHud(): void {
-    const result = this.craftingSystem.startSelectedCraft();
+    const result = this.craftingSystem.startSelectedCraft(this.time.now);
     if (!result.ok) {
       this.setTransientStatus(result.message);
       this.initData.hud.pushFeedMessage(result.message, "system");
-    } else {
+    } else if (result.recipeId && this.ws && this.ws.readyState === WebSocket.OPEN) {
+      const msg: WorldClientMessage = {
+        type: "craft_start",
+        payload: { recipeId: result.recipeId },
+      };
+      this.ws.send(JSON.stringify(msg));
       this.initData.hud.pushFeedMessage(result.message, "system");
     }
     this.syncCraftingHud();
@@ -630,34 +803,8 @@ export class WorldScene extends Phaser.Scene {
       return false;
     }
 
-    const gathering = this.gatheringSystem?.update(
-      deltaMs,
-      this.entityRenderer.local.sprite.x,
-      this.entityRenderer.local.sprite.y,
-      this.time.now,
-    );
-    if (gathering?.completed) {
-      this.entityRenderer.clearGatherAnimation();
-      this.inventory.add(gathering.completed.itemId, gathering.completed.amount);
-      this.sendGatherComplete(gathering.completed.resourceType);
-      const itemName = ITEM_DEFINITIONS[gathering.completed.itemId].name;
-      this.entityRenderer.showFloatingText(
-        this.entityRenderer.local.sprite.x,
-        this.entityRenderer.local.sprite.y - 44,
-        `+${gathering.completed.amount} ${itemName}`,
-        "#8dd2ff",
-      );
-      this.initData.hud.pushFeedMessage(
-        `${itemName} +${gathering.completed.amount} de ${gathering.completed.nodeLabel}.`,
-        "loot",
-      );
-      this.setTransientStatus("Recurso coletado");
-    }
-    if (gathering?.canceledMessage) {
-      this.entityRenderer.clearGatherAnimation();
-      this.initData.hud.pushFeedMessage(gathering.canceledMessage, "system");
-      this.setTransientStatus("Coleta cancelada");
-    }
+    void deltaMs;
+    const gathering = this.gatheringSystem?.update(this.time.now);
 
     const activeGatherNode = this.gatheringSystem?.getActiveNode() ?? null;
     if (activeGatherNode && !this.entityRenderer.local.dead) {
@@ -666,12 +813,7 @@ export class WorldScene extends Phaser.Scene {
       this.entityRenderer.clearGatherAnimation();
     }
 
-    const crafting = this.craftingSystem.update(deltaMs);
-    if (crafting.completedMessage) {
-      this.initData.hud.pushFeedMessage(crafting.completedMessage, "loot");
-      this.setTransientStatus("Craft concluido");
-      this.syncCraftingHud();
-    }
+    const crafting = this.craftingSystem.update(this.time.now);
 
     const progress = gathering?.progress ?? crafting.progress;
     this.initData.hud.setActionProgress(progress);
@@ -755,6 +897,24 @@ export class WorldScene extends Phaser.Scene {
     npc.sprite.destroy();
   }
 
+  private setStaticNpcVisible(npc: StaticNpcEntity, visible: boolean): void {
+    npc.sprite.setVisible(visible).setActive(visible);
+    npc.shadow.setVisible(visible).setActive(visible);
+    npc.nameTag.setVisible(visible).setActive(visible);
+  }
+
+  private syncMapPresentation(): void {
+    const definition = MAP_DEFINITIONS[this.currentMapId];
+    const weather: WeatherType =
+      definition.defaultWeather === "clear" ? "none" : definition.defaultWeather;
+    this.weatherSystem?.set(weather);
+    const showVillageNpcs = this.currentMapId === "default";
+    for (const npc of this.staticNpcEntities.values()) {
+      this.setStaticNpcVisible(npc, showVillageNpcs);
+    }
+    this.refreshInteractionUi();
+  }
+
   // ---------------------------------------------------------------------------
   // Private — interaction UI
   // ---------------------------------------------------------------------------
@@ -764,6 +924,7 @@ export class WorldScene extends Phaser.Scene {
     this.focusedNpcId = target?.kind === "npc" ? target.npc.id : null;
     if (
       this.dialogueState ||
+      this.npcPanelState ||
       this.craftingSystem.isPanelOpen() ||
       this.craftingSystem.isBusy() ||
       this.gatheringSystem?.isBusy()
@@ -780,7 +941,11 @@ export class WorldScene extends Phaser.Scene {
         ? `${target.node.getPromptText()}`
         : target.kind === "loot"
           ? `Coletar ${target.itemLabel}`
-        : `Falar com ${target.npc.spec.name}`,
+          : target.kind === "portal"
+            ? target.label
+            : target.npc.spec.interactionMode === "panel"
+              ? `Atender com ${target.npc.spec.name}`
+              : `Falar com ${target.npc.spec.name}`,
     );
   }
 
@@ -793,6 +958,9 @@ export class WorldScene extends Phaser.Scene {
     let bestDistance = Number.POSITIVE_INFINITY;
 
     for (const npc of this.staticNpcEntities.values()) {
+      if (!npc.sprite.visible) {
+        continue;
+      }
       const distance = Phaser.Math.Distance.Between(
         this.entityRenderer.local.sprite.x,
         this.entityRenderer.local.sprite.y,
@@ -813,6 +981,7 @@ export class WorldScene extends Phaser.Scene {
     | { kind: "resource"; node: ResourceNodeEntity; distance: number }
     | { kind: "npc"; npc: StaticNpcEntity; distance: number }
     | { kind: "loot"; dropId: string; distance: number; itemLabel: string }
+    | { kind: "portal"; portalId: string; label: string; distance: number }
     | null {
     if (!this.entityRenderer.local) {
       return null;
@@ -837,11 +1006,29 @@ export class WorldScene extends Phaser.Scene {
 
     const loot = this.findNearestLootDrop();
     const lootDistance = loot?.distance ?? Number.POSITIVE_INFINITY;
+    const portal = getPortalForPosition(
+      this.currentMapId,
+      this.entityRenderer.local.sprite.x,
+      this.entityRenderer.local.sprite.y,
+    );
+    const portalDistance = portal
+      ? Phaser.Math.Distance.Between(
+          this.entityRenderer.local.sprite.x,
+          this.entityRenderer.local.sprite.y,
+          portal.x,
+          portal.y,
+        )
+      : Number.POSITIVE_INFINITY;
 
-    if (resource && resourceDistance <= npcDistance && resourceDistance <= lootDistance) {
+    if (
+      resource &&
+      resourceDistance <= npcDistance &&
+      resourceDistance <= lootDistance &&
+      resourceDistance <= portalDistance
+    ) {
       return { kind: "resource", node: resource, distance: resourceDistance };
     }
-    if (loot && lootDistance <= npcDistance) {
+    if (loot && lootDistance <= npcDistance && lootDistance <= portalDistance) {
       return {
         kind: "loot",
         dropId: loot.drop.dropId,
@@ -849,8 +1036,16 @@ export class WorldScene extends Phaser.Scene {
         itemLabel: loot.label,
       };
     }
-    if (npc && npcDistance < lootDistance) {
+    if (npc && npcDistance <= lootDistance && npcDistance <= portalDistance) {
       return { kind: "npc", npc, distance: npcDistance };
+    }
+    if (portal) {
+      return {
+        kind: "portal",
+        portalId: portal.id,
+        label: portal.label,
+        distance: portalDistance,
+      };
     }
     return null;
   }
@@ -1017,6 +1212,27 @@ export class WorldScene extends Phaser.Scene {
     this.renderDialogue();
   }
 
+  private openNpcPanel(npc: StaticNpcEntity): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    this.npcPanelState = { npcId: npc.id };
+    this.initData.hud.setInteractionPrompt(null);
+    const msg: WorldClientMessage = {
+      type: "open_npc_panel",
+      payload: { npcId: npc.id },
+    };
+    this.ws.send(JSON.stringify(msg));
+  }
+
+  private renderNpcPanel(view: Omit<HudNpcPanelView, "open">): void {
+    this.npcPanelState = { npcId: view.npcId };
+    this.initData.hud.setNpcPanel({
+      ...view,
+      open: true,
+    });
+  }
+
   private advanceDialogue(): void {
     if (!this.dialogueState) {
       return;
@@ -1058,12 +1274,18 @@ export class WorldScene extends Phaser.Scene {
     this.refreshInteractionUi();
   }
 
+  private closeNpcPanel(): void {
+    this.npcPanelState = null;
+    this.initData.hud.closeNpcPanel();
+    this.refreshInteractionUi();
+  }
+
   // ---------------------------------------------------------------------------
   // Private — crafting panel
   // ---------------------------------------------------------------------------
 
   private toggleCraftingPanel(): void {
-    if (this.dialogueState || this.gatheringSystem?.isBusy()) {
+    if (this.dialogueState || this.npcPanelState || this.gatheringSystem?.isBusy()) {
       return;
     }
     this.craftingSystem.togglePanel();
@@ -1076,13 +1298,16 @@ export class WorldScene extends Phaser.Scene {
   // ---------------------------------------------------------------------------
 
   private connectWorldSocket(): void {
-    const token = encodeURIComponent(this.initData.token);
-    const wsUrl = `${this.initData.gatewayWsUrl}?token=${token}`;
     this.initData.hud.setStatus("Conectando ao world...");
-    this.ws = new WebSocket(wsUrl);
+    this.ws = new WebSocket(this.initData.gatewayWsUrl);
 
     this.ws.onopen = () => {
-      this.initData.hud.setStatus("Conectado");
+      this.initData.hud.setStatus("Autenticando...");
+      const msg: WorldClientMessage = {
+        type: "auth",
+        payload: { token: this.initData.token },
+      };
+      this.ws?.send(JSON.stringify(msg));
     };
 
     this.ws.onclose = () => {
@@ -1120,6 +1345,7 @@ export class WorldScene extends Phaser.Scene {
     switch (msg.type) {
       case "welcome": {
         this.localId = msg.payload.characterId;
+        this.currentMapId = msg.payload.mapId;
         this.combatConfig = msg.payload.combatConfig;
         this.ensureLocalEntity(this.localId, msg.payload.position.x, msg.payload.position.y);
         this.applyProgressionSnapshot(msg.payload.progression, false);
@@ -1127,7 +1353,14 @@ export class WorldScene extends Phaser.Scene {
         this.syncMobs(msg.payload.mobs);
         this.syncLoot(msg.payload.loot ?? []);
         this.inventory.setFromServer(msg.payload.inventory ?? {});
+        this.craftingSystem.syncServerState(msg.payload.craftState);
+        this.gatheringSystem?.syncServerState(msg.payload.gatherState);
+        this.initData.hud.closeNpcPanel();
+        this.npcPanelState = null;
+        this.syncMapPresentation();
         this.initData.hud.setStatus("No mundo");
+        this.syncInventoryHud();
+        this.syncCraftingHud();
         return;
       }
       case "inventory": {
@@ -1143,8 +1376,44 @@ export class WorldScene extends Phaser.Scene {
         this.syncLoot(msg.payload.loot ?? []);
         return;
       }
+      case "craft_state": {
+        const message = this.craftingSystem.syncServerState(msg.payload);
+        if (message) {
+          this.initData.hud.pushFeedMessage(message, "loot");
+          this.setTransientStatus(msg.payload.status === "completed" ? "Craft concluido" : "Craft cancelado");
+        }
+        this.syncCraftingHud();
+        return;
+      }
+      case "gather_state": {
+        const result = this.gatheringSystem?.syncServerState(msg.payload);
+        if (result?.itemId && result.amount > 0 && this.entityRenderer.local) {
+          const itemName = ITEM_DEFINITIONS[result.itemId].name;
+          this.entityRenderer.showFloatingText(
+            this.entityRenderer.local.sprite.x,
+            this.entityRenderer.local.sprite.y - 44,
+            `+${result.amount} ${itemName}`,
+            "#8dd2ff",
+          );
+          this.initData.hud.pushFeedMessage(`${itemName} +${result.amount}.`, "loot");
+          this.setTransientStatus("Recurso coletado");
+        } else if (result?.message) {
+          this.initData.hud.pushFeedMessage(result.message, "system");
+        }
+        return;
+      }
       case "progression": {
         this.applyProgressionSnapshot(msg.payload);
+        return;
+      }
+      case "position_correction": {
+        this.authoritativeLocalX = msg.payload.x;
+        this.authoritativeLocalY = msg.payload.y;
+        this.hasAuthoritativeLocalPosition = true;
+        if (this.entityRenderer.local) {
+          this.entityRenderer.setEntityPosition(this.entityRenderer.local, msg.payload.x, msg.payload.y);
+          this.notifyHudPosition(msg.payload.x, msg.payload.y);
+        }
         return;
       }
       case "respawned": {
@@ -1173,7 +1442,55 @@ export class WorldScene extends Phaser.Scene {
         this.applyErrorFeedback(msg.payload.code, msg.payload.message);
         return;
       }
+      case "npc_panel": {
+        this.renderNpcPanel({
+          npcId: msg.payload.npcId,
+          npcName: msg.payload.npcName,
+          title: msg.payload.title,
+          description: msg.payload.description,
+          hint: msg.payload.hint,
+          actions: msg.payload.actions,
+        });
+        return;
+      }
       case "pong": {
+        return;
+      }
+      case "map_changed": {
+        this.currentMapId = msg.payload.mapId;
+        this.ensureLocalEntity(this.localId, msg.payload.position.x, msg.payload.position.y);
+        this.authoritativeLocalX = msg.payload.position.x;
+        this.authoritativeLocalY = msg.payload.position.y;
+        this.hasAuthoritativeLocalPosition = true;
+        this.closeDialogue();
+        this.closeNpcPanel();
+        this.craftingSystem.closePanel();
+        this.syncCraftingHud();
+        this.syncMapPresentation();
+        this.initData.hud.pushFeedMessage(
+          `Entrando em ${MAP_DEFINITIONS[msg.payload.mapId].name}.`,
+          "system",
+        );
+        this.setTransientStatus(MAP_DEFINITIONS[msg.payload.mapId].name);
+        return;
+      }
+      case "quest_update": {
+        const quest = QUEST_DEFINITIONS[msg.payload.questId];
+        if (!quest) {
+          return;
+        }
+        const progressLabel = `${Math.min(msg.payload.progress, quest.requiredAmount)}/${quest.requiredAmount}`;
+        if (msg.payload.status === "ready") {
+          this.initData.hud.pushFeedMessage(`${quest.title} pronta para entrega.`, "system");
+          this.setTransientStatus("Quest pronta");
+          return;
+        }
+        if (msg.payload.status === "completed") {
+          this.initData.hud.pushFeedMessage(`${quest.title} concluida.`, "system");
+          this.setTransientStatus("Quest concluida");
+          return;
+        }
+        this.initData.hud.pushFeedMessage(`${quest.title}: ${progressLabel}.`, "system");
         return;
       }
     }
@@ -1187,7 +1504,16 @@ export class WorldScene extends Phaser.Scene {
     this.localMoveSpeed = worldMoveSpeedForClass(
       this.resolveCharacterClass(this.initData.characterClass),
     );
-    const safePosition = this.findNearestWalkablePosition(x, y);
+    const safePosition = this.findNearestWalkablePosition(
+      x,
+      y,
+      this.entityRenderer.local
+        ? {
+            x: this.entityRenderer.local.sprite.x,
+            y: this.entityRenderer.local.sprite.y,
+          }
+        : undefined,
+    );
     this.hasAuthoritativeLocalPosition = true;
     this.authoritativeLocalX = safePosition.x;
     this.authoritativeLocalY = safePosition.y;
@@ -1214,7 +1540,10 @@ export class WorldScene extends Phaser.Scene {
     for (const player of players) {
       if (player.characterId === this.localId) {
         if (this.entityRenderer.local) {
-          const safePosition = this.findNearestWalkablePosition(player.x, player.y);
+          const safePosition = this.findNearestWalkablePosition(player.x, player.y, {
+            x: this.entityRenderer.local.sprite.x,
+            y: this.entityRenderer.local.sprite.y,
+          });
           this.hasAuthoritativeLocalPosition = true;
           this.authoritativeLocalX = safePosition.x;
           this.authoritativeLocalY = safePosition.y;
@@ -1315,6 +1644,7 @@ export class WorldScene extends Phaser.Scene {
   private applyCombatEvent(payload: CombatEventPayload): void {
     const attacker = this.entityRenderer.resolveEntity(payload.attackerId, this.localId);
     const target = this.entityRenderer.resolveEntity(payload.targetId, this.localId);
+    const attackStyle = this.resolveAttackStyle(attacker);
 
     if (attacker && !attacker.dead) {
       const targetX = target?.sprite.x ?? attacker.sprite.x + 1;
@@ -1335,61 +1665,127 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
-    const isLocalTarget = payload.targetId === this.localId;
-    const popupColor = isLocalTarget ? COLOR_DAMAGE_PLAYER : COLOR_DAMAGE_ENEMY;
+    const applyImpact = (): void => {
+      const impactTarget = this.entityRenderer.resolveEntity(payload.targetId, this.localId) ?? target;
+      if (!impactTarget.sprite.active) {
+        return;
+      }
+      const impactAttacker =
+        this.entityRenderer.resolveEntity(payload.attackerId, this.localId) ?? attacker;
+      const isLocalTarget = payload.targetId === this.localId;
+      const popupColor = isLocalTarget ? COLOR_DAMAGE_PLAYER : COLOR_DAMAGE_ENEMY;
+      const isHeavyHit = payload.damage >= 20 || Boolean(payload.isCritical);
 
-    if (payload.damage > 0 && payload.targetHealth > 0) {
-      this.entityRenderer.playAction(target, "hurt", { force: true, lockForDuration: true });
-      this.entityRenderer.flashEntity(target);
-    }
+      if (payload.isDodged) {
+        this.entityRenderer.showFloatingText(
+          impactTarget.sprite.x,
+          impactTarget.sprite.y - 32,
+          "Esquiva",
+          "#8fe7ff",
+        );
+        if (isLocalTarget) {
+          this.initData.hud.setHp(payload.targetHealth, this.maxHp);
+        }
+        return;
+      }
 
-    this.entityRenderer.showFloatingText(
-      target.sprite.x,
-      target.sprite.y - 32,
-      String(payload.damage),
-      popupColor,
-    );
+      if (payload.damage > 0 && payload.targetHealth > 0) {
+        this.entityRenderer.playAction(impactTarget, "hurt", {
+          force: true,
+          lockForDuration: true,
+        });
+        this.entityRenderer.flashEntity(impactTarget, isHeavyHit);
+        if (impactAttacker && attackStyle === "melee") {
+          this.entityRenderer.knockbackEntity(
+            impactTarget,
+            impactAttacker.sprite.x,
+            impactAttacker.sprite.y,
+          );
+        }
+      }
 
-    if (isLocalTarget) {
-      this.initData.hud.setHp(payload.targetHealth, this.maxHp);
-      if (payload.targetHealth <= 0) {
-        target.dead = true;
-        this.craftingSystem.closePanel();
-        this.syncCraftingHud();
-        this.closeDialogue();
-        this.entityRenderer.playAction(target, "death", { force: true, lockForDuration: true });
-        this.initData.hud.setStatus("Voce morreu");
-        this.initData.hud.openDeathModal(
-          "Voce foi derrotado. Clique em respawn para voltar ao vilarejo.",
+      if (isLocalTarget && payload.damage > 0) {
+        const intensity = isHeavyHit ? 0.009 : 0.004;
+        this.cameras.main.shake(170, intensity);
+      }
+
+      this.entityRenderer.showFloatingText(
+        impactTarget.sprite.x,
+        impactTarget.sprite.y - 32,
+        String(payload.damage),
+        popupColor,
+        isHeavyHit,
+      );
+      if (payload.isCritical) {
+        this.entityRenderer.showFloatingText(
+          impactTarget.sprite.x,
+          impactTarget.sprite.y - 50,
+          "Crit!",
+          "#ffd866",
         );
       }
+
+      if (isLocalTarget) {
+        this.initData.hud.setHp(payload.targetHealth, this.maxHp);
+        if (payload.targetHealth <= 0) {
+          impactTarget.dead = true;
+          this.craftingSystem.closePanel();
+          this.syncCraftingHud();
+          this.closeDialogue();
+          this.closeNpcPanel();
+          this.entityRenderer.playAction(impactTarget, "death", {
+            force: true,
+            lockForDuration: true,
+          });
+          this.initData.hud.setStatus("Voce morreu");
+          this.initData.hud.openDeathModal(
+            "Voce foi derrotado. Clique em respawn para voltar ao vilarejo.",
+          );
+        }
+      }
+
+      const isMob = this.entityRenderer.mobs.has(payload.targetId);
+      if (isMob) {
+        this.entityRenderer.setMobHealth(impactTarget, payload.targetHealth);
+      }
+      if (payload.targetHealth <= 0 && isMob) {
+        this.entityRenderer.pendingDeadMobs.add(payload.targetId);
+        if (this.entityRenderer.currentTargetMobId === payload.targetId) {
+          this.entityRenderer.currentTargetMobId = null;
+        }
+        impactTarget.dead = true;
+        impactTarget.mobUi?.aura.setVisible(false);
+        impactTarget.mobUi?.hpBarBack.setVisible(false);
+        impactTarget.mobUi?.hpBarFill.setVisible(false);
+        impactTarget.mobUi?.levelTag.setVisible(false);
+        this.entityRenderer.playAction(impactTarget, "death", {
+          force: true,
+          lockForDuration: true,
+        });
+        this.time.delayedCall(650, () => {
+          const mob = this.entityRenderer.mobs.get(payload.targetId);
+          if (!mob) {
+            return;
+          }
+          this.entityRenderer.destroyEntity(mob);
+          this.entityRenderer.mobs.delete(payload.targetId);
+          this.entityRenderer.pendingDeadMobs.delete(payload.targetId);
+        });
+      }
+    };
+
+    if (attacker && attackStyle === "ranged") {
+      const travelMs = this.entityRenderer.spawnArcaneProjectile(
+        attacker.sprite.x,
+        attacker.sprite.y,
+        target.sprite.x,
+        target.sprite.y,
+      );
+      this.time.delayedCall(travelMs, applyImpact);
+      return;
     }
 
-    const isMob = this.entityRenderer.mobs.has(payload.targetId);
-    if (isMob) {
-      this.entityRenderer.setMobHealth(target, payload.targetHealth);
-    }
-    if (payload.targetHealth <= 0 && isMob) {
-      this.entityRenderer.pendingDeadMobs.add(payload.targetId);
-      if (this.entityRenderer.currentTargetMobId === payload.targetId) {
-        this.entityRenderer.currentTargetMobId = null;
-      }
-      target.dead = true;
-      target.mobUi?.aura.setVisible(false);
-      target.mobUi?.hpBarBack.setVisible(false);
-      target.mobUi?.hpBarFill.setVisible(false);
-      target.mobUi?.levelTag.setVisible(false);
-      this.entityRenderer.playAction(target, "death", { force: true, lockForDuration: true });
-      this.time.delayedCall(650, () => {
-        const mob = this.entityRenderer.mobs.get(payload.targetId);
-        if (!mob) {
-          return;
-        }
-        this.entityRenderer.destroyEntity(mob);
-        this.entityRenderer.mobs.delete(payload.targetId);
-        this.entityRenderer.pendingDeadMobs.delete(payload.targetId);
-      });
-    }
+    applyImpact();
   }
 
   // ---------------------------------------------------------------------------
@@ -1399,6 +1795,13 @@ export class WorldScene extends Phaser.Scene {
   private applyErrorFeedback(code: string, message: string): void {
     if (!this.entityRenderer.local) {
       return;
+    }
+    if (code === "CRAFT") {
+      this.craftingSystem.cancelActiveCraft();
+      this.syncCraftingHud();
+    }
+    if (code === "GATHER" || (code === "OUT_OF_RANGE" && this.gatheringSystem?.isBusy())) {
+      this.gatheringSystem?.cancelActiveGather("Servidor rejeitou a coleta", this.time.now);
     }
     if (code === "COOLDOWN" || code === "OUT_OF_RANGE" || code === "NOT_FOUND") {
       const label =
@@ -1465,8 +1868,9 @@ export class WorldScene extends Phaser.Scene {
     let vy = 0;
     if (dx !== 0 || dy !== 0) {
       const len = Math.hypot(dx, dy);
-      vx = (dx / len) * this.localMoveSpeed;
-      vy = (dy / len) * this.localMoveSpeed;
+      const speedMult = this.skillSystem?.speedMultiplier ?? 1;
+      vx = (dx / len) * this.localMoveSpeed * speedMult;
+      vy = (dy / len) * this.localMoveSpeed * speedMult;
     }
     this.localInputActive = dx !== 0 || dy !== 0;
 
@@ -1529,6 +1933,18 @@ export class WorldScene extends Phaser.Scene {
     );
   }
 
+  private syncLocalFootsteps(vx: number, vy: number): void {
+    if (!this.entityRenderer.local || !this.footstepSystem) {
+      return;
+    }
+    this.footstepSystem.update(
+      this.entityRenderer.local.sprite.x,
+      this.entityRenderer.local.sprite.y,
+      vx,
+      vy,
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Private — collision
   // ---------------------------------------------------------------------------
@@ -1537,13 +1953,9 @@ export class WorldScene extends Phaser.Scene {
     if (!this.collisionLayer) {
       return false;
     }
-    const probes: ReadonlyArray<[number, number]> = [
-      [x, y + 16],
-      [x - 9, y + 16],
-      [x + 9, y + 16],
-      [x, y + 8],
-    ];
-    return probes.some(([px, py]) => {
+    return FOOT_PROBES.some(([dx, dy]) => {
+      const px = x + dx;
+      const py = y + dy;
       const tile = this.collisionLayer?.getTileAtWorldXY(px, py);
       return (
         Boolean(tile && tile.index > 0) ||
@@ -1555,6 +1967,9 @@ export class WorldScene extends Phaser.Scene {
 
   private isBlockedByStaticNpc(x: number, y: number): boolean {
     for (const npc of this.staticNpcEntities.values()) {
+      if (!npc.sprite.visible) {
+        continue;
+      }
       const centerX = npc.sprite.x;
       const centerY = npc.sprite.y - 10;
       const dx = (x - centerX) / npc.blockerRadiusX;
@@ -1580,7 +1995,11 @@ export class WorldScene extends Phaser.Scene {
     return false;
   }
 
-  private findNearestWalkablePosition(x: number, y: number): { x: number; y: number } {
+  private findNearestWalkablePosition(
+    x: number,
+    y: number,
+    preferred?: { x: number; y: number },
+  ): { x: number; y: number } {
     const clampedX = Phaser.Math.Clamp(x, this.worldMinX, this.worldMaxX);
     const clampedY = Phaser.Math.Clamp(y, this.worldMinY, this.worldMaxY);
     if (!this.isBlockedAtWorldPosition(clampedX, clampedY)) {
@@ -1592,6 +2011,8 @@ export class WorldScene extends Phaser.Scene {
     const maxRings = 12;
 
     for (let ring = 1; ring <= maxRings; ring += 1) {
+      let bestCandidate: { x: number; y: number } | null = null;
+      let bestScore = Number.POSITIVE_INFINITY;
       for (let oy = -ring; oy <= ring; oy += 1) {
         for (let ox = -ring; ox <= ring; ox += 1) {
           if (Math.abs(ox) !== ring && Math.abs(oy) !== ring) {
@@ -1599,10 +2020,22 @@ export class WorldScene extends Phaser.Scene {
           }
           const nx = Phaser.Math.Clamp(clampedX + ox * step, this.worldMinX, this.worldMaxX);
           const ny = Phaser.Math.Clamp(clampedY + oy * step, this.worldMinY, this.worldMaxY);
-          if (!this.isBlockedAtWorldPosition(nx, ny)) {
-            return { x: nx, y: ny };
+          if (this.isBlockedAtWorldPosition(nx, ny)) {
+            continue;
+          }
+          const fallbackDistance = Phaser.Math.Distance.Between(nx, ny, clampedX, clampedY);
+          const preferredDistance = preferred
+            ? Phaser.Math.Distance.Between(nx, ny, preferred.x, preferred.y)
+            : 0;
+          const score = fallbackDistance * 1000 + preferredDistance;
+          if (score < bestScore) {
+            bestScore = score;
+            bestCandidate = { x: nx, y: ny };
           }
         }
+      }
+      if (bestCandidate) {
+        return bestCandidate;
       }
     }
 
@@ -1612,33 +2045,6 @@ export class WorldScene extends Phaser.Scene {
   // ---------------------------------------------------------------------------
   // Private — WS send helpers
   // ---------------------------------------------------------------------------
-
-  private sendGatherComplete(resourceType: GatherResourceType): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      return;
-    }
-    const msg: WorldClientMessage = {
-      type: "gather_complete",
-      payload: { resourceType },
-    };
-    this.ws.send(JSON.stringify(msg));
-  }
-
-  private sendInventorySync(): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      return;
-    }
-    const inv: Record<string, number> = {};
-    for (const itemId of ITEM_IDS) {
-      const count = this.inventory.getCount(itemId);
-      if (count > 0) inv[itemId] = count;
-    }
-    const msg: WorldClientMessage = {
-      type: "inventory_sync",
-      payload: { inventory: inv },
-    };
-    this.ws.send(JSON.stringify(msg));
-  }
 
   private tryPickupLoot(dropId: string): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
@@ -1711,6 +2117,97 @@ export class WorldScene extends Phaser.Scene {
     this.ws.send(JSON.stringify(msg));
   }
 
+  private requestSkillUse(): void {
+    if (
+      !this.skillSystem ||
+      !this.entityRenderer.local ||
+      this.entityRenderer.local.dead ||
+      this.dialogueState ||
+      this.npcPanelState ||
+      this.craftingSystem.isPanelOpen()
+    ) {
+      return;
+    }
+
+    const level = this.progressionSnapshot?.level ?? 1;
+    const activated = this.skillSystem.tryActivate(level);
+
+    if (!activated) {
+      const remaining = this.skillSystem.remainingCooldownMs();
+      if (!this.skillSystem.isUnlocked(level)) {
+        this.entityRenderer.showFloatingText(
+          this.entityRenderer.local.sprite.x,
+          this.entityRenderer.local.sprite.y - 36,
+          `Lv.${this.skillSystem.definition?.unlockLevel ?? 5}`,
+          COLOR_REJECT,
+        );
+        this.setTransientStatus("Habilidade bloqueada");
+      } else if (remaining > 0) {
+        const secs = Math.ceil(remaining / 1000);
+        this.entityRenderer.showFloatingText(
+          this.entityRenderer.local.sprite.x,
+          this.entityRenderer.local.sprite.y - 36,
+          `${secs}s`,
+          COLOR_REJECT,
+        );
+        this.setTransientStatus("Em recarga");
+      }
+      return;
+    }
+
+    // Visual effect
+    const x = this.entityRenderer.local.sprite.x;
+    const y = this.entityRenderer.local.sprite.y;
+    const facing = this.resolveSkillFacing();
+    this.entityRenderer.playAction(this.entityRenderer.local, "attack", {
+      facing,
+      force: true,
+      lockForDuration: true,
+    });
+    this.entityRenderer.spawnSkillEffect(activated, x, y, facing);
+
+    // Base class skills
+    const impactRadius = this.skillSystem.definition?.impactRadius ?? 0;
+    if (activated === "warrior_battle_cry") {
+      this.cameras.main.flash(260, 255, 194, 90, false);
+      this.requestAoeAttack(activated, impactRadius);
+    } else if (activated === "rogue_shadow_step") {
+      this.cameras.main.flash(170, 120, 170, 210, false);
+      this.requestAoeAttack(activated, impactRadius);
+    } else if (activated === "mage_arcane_blast") {
+      this.cameras.main.flash(300, 80, 40, 180, false);
+      this.requestAoeAttack(activated, impactRadius);
+    } else if (activated === "archer_rain_of_arrows") {
+      this.cameras.main.flash(350, 230, 120, 40, false);
+      this.requestAoeAttack(activated, impactRadius);
+    }
+
+    // Send WS notification (server can handle or ignore)
+    if (this.ws && this.ws.readyState === WebSocket.OPEN && impactRadius <= 0) {
+      const msg: WorldClientMessage = {
+        type: "use_skill",
+        payload: { skillId: activated as SkillId },
+      };
+      this.ws.send(JSON.stringify(msg));
+    }
+
+    const name = this.skillSystem.definition?.name ?? "Habilidade";
+    this.initData.hud.pushFeedMessage(`${name} ativada!`, "system");
+    this.setTransientStatus(name);
+  }
+
+  /** Resolve an offensive class skill server-side in one authoritative AOE message. */
+  private requestAoeAttack(skillId: SkillId, radius: number): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    if (radius <= 0) {
+      const msg: WorldClientMessage = { type: "use_skill", payload: { skillId } };
+      this.ws.send(JSON.stringify(msg));
+      return;
+    }
+    const msg: WorldClientMessage = { type: "aoe_attack", payload: { skillId } };
+    this.ws.send(JSON.stringify(msg));
+  }
+
   // ---------------------------------------------------------------------------
   // Private — resolve helpers
   // ---------------------------------------------------------------------------
@@ -1720,5 +2217,31 @@ export class WorldScene extends Phaser.Scene {
       return classId as CharacterClassId;
     }
     return "warrior";
+  }
+
+  private resolveAttackStyle(
+    entity: RenderedEntity | null,
+  ): "melee" | "ranged" {
+    if (!entity || entity.kind !== "player") {
+      return "melee";
+    }
+    return playerAttackProfileForClass(entity.visual as CharacterClassId).style;
+  }
+
+  private resolveSkillFacing(): Facing {
+    const local = this.entityRenderer.local;
+    if (!local) {
+      return "right";
+    }
+    const targetMobId = this.entityRenderer.currentTargetMobId;
+    const target = targetMobId ? this.entityRenderer.mobs.get(targetMobId) : null;
+    if (!target) {
+      return local.facing;
+    }
+    return this.entityRenderer.facingFromDelta(
+      target.sprite.x - local.sprite.x,
+      target.sprite.y - local.sprite.y,
+      local.facing,
+    );
   }
 }

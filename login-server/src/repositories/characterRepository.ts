@@ -1,12 +1,12 @@
 import type pg from "pg";
-import type { CharacterClassId } from "@myth-of-rune/shared";
+import type { CharacterClassId, MapId } from "@myth-of-rune/shared";
 
 export interface CharacterRow {
   id: string;
   user_id: string;
   name: string;
   character_class: CharacterClassId;
-  map_id: string;
+  map_id: MapId;
   x: number;
   y: number;
   health: number;

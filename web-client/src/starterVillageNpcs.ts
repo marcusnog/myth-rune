@@ -9,6 +9,7 @@ export interface StarterVillageNpcSpec {
   blockerRadiusX: number;
   blockerRadiusY: number;
   interactionRadius: number;
+  interactionMode?: "dialogue" | "panel";
   dialogue: readonly string[];
 }
 
@@ -41,6 +42,7 @@ export const STARTER_VILLAGE_NPCS: readonly StarterVillageNpcSpec[] = [
     blockerRadiusX: 10,
     blockerRadiusY: 7,
     interactionRadius: 52,
+    interactionMode: "panel",
     dialogue: [
       "Tenho mantimentos, corda, lampioes e o que mais sobrou da ultima caravana.",
       "Se for sair da vila, leve algo para se curar. Os novatos sempre esquecem disso.",
@@ -57,6 +59,7 @@ export const STARTER_VILLAGE_NPCS: readonly StarterVillageNpcSpec[] = [
     blockerRadiusX: 10,
     blockerRadiusY: 7,
     interactionRadius: 52,
+    interactionMode: "panel",
     dialogue: [
       "A floresta anda inquieta. Tenho recebido mais feridos do que o normal.",
       "Se perder muita vida em combate, volte e recupere o folego antes de insistir.",
@@ -89,6 +92,7 @@ export const STARTER_VILLAGE_NPCS: readonly StarterVillageNpcSpec[] = [
     blockerRadiusX: 12,
     blockerRadiusY: 8,
     interactionRadius: 56,
+    interactionMode: "panel",
     dialogue: [
       "Armas ruins quebram no pior momento. Eu prefiro evitar esse tipo de licao.",
       "Se conseguir minerio e sucata melhores, eu posso transformar isso em algo util.",
@@ -105,6 +109,7 @@ export const STARTER_VILLAGE_NPCS: readonly StarterVillageNpcSpec[] = [
     blockerRadiusX: 11,
     blockerRadiusY: 8,
     interactionRadius: 56,
+    interactionMode: "panel",
     dialogue: [
       "Mantenha os olhos na estrada principal e os pes longe da agua funda.",
       "Se vir goblins rondando perto da cerca, avise alguem antes que virem um bando.",
@@ -137,6 +142,7 @@ export const STARTER_VILLAGE_NPCS: readonly StarterVillageNpcSpec[] = [
     blockerRadiusX: 10,
     blockerRadiusY: 7,
     interactionRadius: 54,
+    interactionMode: "panel",
     dialogue: [
       "Ha energia antiga na floresta. Algumas ruinas ainda sussurram para quem sabe ouvir.",
       "Se encontrar algo estranho, observe primeiro. Nem toda luz e um convite.",

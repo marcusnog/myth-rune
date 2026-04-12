@@ -1,4 +1,6 @@
 export const ITEM_IDS = [
+  "gold_coin",
+  "health_potion",
   "wood",
   "plank",
   "wood_handle",
@@ -30,6 +32,26 @@ export interface ItemDefinition {
 }
 
 export const ITEM_DEFINITIONS: Readonly<Record<ItemId, ItemDefinition>> = {
+  gold_coin: {
+    id: "gold_coin",
+    name: "Moeda de ouro",
+    category: "Moeda",
+    description: "Moeda comum usada para negociar com mercadores e servicos na vila.",
+    shortLabel: "G",
+    accent: "#f2c14d",
+    sortOrder: 0,
+    icon: { src: "consumables.png", col: 0, row: 0, size: 16 },
+  },
+  health_potion: {
+    id: "health_potion",
+    name: "Pocao de vida",
+    category: "Consumivel",
+    description: "Restaura parte da vida quando usada fora do menu de equipamento.",
+    shortLabel: "PV",
+    accent: "#ff8f8f",
+    sortOrder: 1,
+    icon: { src: "potions.png", col: 0, row: 0, size: 16 },
+  },
   wood: {
     id: "wood",
     name: "Madeira",
@@ -37,7 +59,7 @@ export const ITEM_DEFINITIONS: Readonly<Record<ItemId, ItemDefinition>> = {
     description: "Troncos cortados e prontos para uso em crafting basico.",
     shortLabel: "MAD",
     accent: "#d8a266",
-    sortOrder: 1,
+    sortOrder: 2,
     // camping.png row 0: backpack, rope, mushroom, herb, log?, ?, ?
     icon: { src: "camping.png", col: 0, row: 0, size: 16 },
   },
@@ -48,7 +70,7 @@ export const ITEM_DEFINITIONS: Readonly<Record<ItemId, ItemDefinition>> = {
     description: "Madeira processada para receitas de construcao e ferramentas.",
     shortLabel: "TAB",
     accent: "#f0c17a",
-    sortOrder: 2,
+    sortOrder: 3,
     icon: { src: "camping.png", col: 1, row: 0, size: 16 },
   },
   wood_handle: {
@@ -58,7 +80,7 @@ export const ITEM_DEFINITIONS: Readonly<Record<ItemId, ItemDefinition>> = {
     description: "Empunhadura simples usada na montagem de ferramentas.",
     shortLabel: "CAB",
     accent: "#c68d52",
-    sortOrder: 3,
+    sortOrder: 4,
     icon: { src: "camping.png", col: 2, row: 0, size: 16 },
   },
   stone: {
@@ -68,7 +90,7 @@ export const ITEM_DEFINITIONS: Readonly<Record<ItemId, ItemDefinition>> = {
     description: "Pedra bruta extraida de nodos mineraveis espalhados pelo mapa.",
     shortLabel: "PED",
     accent: "#b6c1cf",
-    sortOrder: 4,
+    sortOrder: 5,
     // cave.png: row 0 col 4 = blue crystal/rock
     icon: { src: "cave.png", col: 4, row: 0, size: 16 },
   },
@@ -79,7 +101,7 @@ export const ITEM_DEFINITIONS: Readonly<Record<ItemId, ItemDefinition>> = {
     description: "Pedra refinada para receitas mais resistentes e acabamentos.",
     shortLabel: "LAP",
     accent: "#d4dde8",
-    sortOrder: 5,
+    sortOrder: 6,
     // cave.png: row 0 col 2 = processed gem/stone
     icon: { src: "cave.png", col: 2, row: 0, size: 16 },
   },
@@ -90,7 +112,7 @@ export const ITEM_DEFINITIONS: Readonly<Record<ItemId, ItemDefinition>> = {
     description: "Ferramenta inicial para cortar arvores e coletar madeira.",
     shortLabel: "MAX",
     accent: "#ffcb75",
-    sortOrder: 6,
+    sortOrder: 7,
     // cave.png: row 1 col 0 = axe
     icon: { src: "cave.png", col: 0, row: 1, size: 16 },
   },
@@ -101,7 +123,7 @@ export const ITEM_DEFINITIONS: Readonly<Record<ItemId, ItemDefinition>> = {
     description: "Ferramenta inicial para minerar rochas e depositos de ore.",
     shortLabel: "PIC",
     accent: "#9fd4ff",
-    sortOrder: 7,
+    sortOrder: 8,
     // cave.png: row 0 col 0 = pickaxe
     icon: { src: "cave.png", col: 0, row: 0, size: 16 },
   },

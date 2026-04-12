@@ -10,7 +10,18 @@ import { safeErrorHandler } from "./middleware/safeErrors.js";
 const app = express();
 
 app.disable("x-powered-by");
-app.use(cors({ origin: true, credentials: true }));
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      if (!origin || config.allowedOrigins.includes(origin)) {
+        cb(null, true);
+        return;
+      }
+      cb(new Error("CORS: origem nao permitida"));
+    },
+    credentials: true,
+  }),
+);
 app.use(requestContext);
 app.use(jsonRequestLogger);
 

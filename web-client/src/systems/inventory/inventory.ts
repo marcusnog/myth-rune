@@ -118,10 +118,16 @@ export class InventoryStore {
   public buildSummary(): string {
     const distinct = Array.from(this.counts.values()).filter((value) => value > 0).length;
     const total = Array.from(this.counts.values()).reduce((sum, value) => sum + value, 0);
+    const gold = this.getCount("gold_coin");
+    const potions = this.getCount("health_potion");
     if (distinct === 0) {
       return "Bolsa vazia";
     }
-    return `${distinct} item(ns) | ${total} unidade(s)`;
+    const extras: string[] = [];
+    if (gold > 0) extras.push(`${gold} ouro`);
+    if (potions > 0) extras.push(`${potions} pocoes`);
+    const suffix = extras.length > 0 ? ` | ${extras.join(" | ")}` : "";
+    return `${distinct} item(ns) | ${total} unidade(s)${suffix}`;
   }
 
   private emit(): void {

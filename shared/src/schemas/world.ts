@@ -1,9 +1,13 @@
 import { z } from "zod";
 import { CharacterClass } from "../character.js";
 import { WORLD_COMBAT_REJECT_CODES } from "../combatRules.js";
+import { ITEM_IDS } from "../items.js";
 import { RUNE_IDS, RUNE_SLOT_COUNT } from "../runes.js";
+import { QUEST_IDS } from "../quests.js";
+import { CRAFTING_RECIPES } from "../recipes.js";
+import { SKILL_IDS } from "../skills.js";
 import { DEFAULT_EQUIPMENT } from "../equipment.js";
-import { positionSchema } from "./common.js";
+import { mapIdSchema, positionSchema } from "./common.js";
 
 const characterClassInWorldSchema = z.enum([
   CharacterClass.Warrior,
@@ -23,7 +27,21 @@ export const GATHER_XP: Readonly<Record<GatherResourceType, number>> = {
   stone_deposit: 12,
 };
 
+export const recipeIdSchema = z.enum(
+  CRAFTING_RECIPES.map((recipe) => recipe.id) as [string, ...string[]],
+);
+
+export const itemIdSchema = z.enum(ITEM_IDS);
+
+export const questIdSchema = z.enum(QUEST_IDS);
+
 export const worldClientMessageSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("auth"),
+    payload: z.object({
+      token: z.string().min(1),
+    }),
+  }),
   z.object({
     type: z.literal("move"),
     payload: positionSchema,
@@ -32,6 +50,12 @@ export const worldClientMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("attack"),
     payload: z.object({
       targetMobId: z.string().uuid(),
+    }),
+  }),
+  z.object({
+    type: z.literal("aoe_attack"),
+    payload: z.object({
+      skillId: z.enum(SKILL_IDS),
     }),
   }),
   z.object({
@@ -57,21 +81,61 @@ export const worldClientMessageSchema = z.discriminatedUnion("type", [
     payload: z.object({}),
   }),
   z.object({
-    type: z.literal("gather_complete"),
+    type: z.literal("craft_start"),
     payload: z.object({
+      recipeId: recipeIdSchema,
+    }),
+  }),
+  z.object({
+    type: z.literal("craft_cancel"),
+    payload: z.object({}),
+  }),
+  z.object({
+    type: z.literal("gather_start"),
+    payload: z.object({
+      nodeId: z.string().min(1),
       resourceType: gatherResourceTypeSchema,
     }),
   }),
   z.object({
-    type: z.literal("inventory_sync"),
+    type: z.literal("gather_cancel"),
+    payload: z.object({}),
+  }),
+  z.object({
+    type: z.literal("change_map"),
     payload: z.object({
-      inventory: z.record(z.string(), z.number().int().nonnegative()),
+      portalId: z.string().min(1),
     }),
   }),
   z.object({
     type: z.literal("pickup_loot"),
     payload: z.object({
       dropId: z.string().uuid(),
+    }),
+  }),
+  z.object({
+    type: z.literal("use_item"),
+    payload: z.object({
+      itemId: z.string().min(1),
+    }),
+  }),
+  z.object({
+    type: z.literal("open_npc_panel"),
+    payload: z.object({
+      npcId: z.string().min(1),
+    }),
+  }),
+  z.object({
+    type: z.literal("npc_action"),
+    payload: z.object({
+      npcId: z.string().min(1),
+      actionId: z.string().min(1),
+    }),
+  }),
+  z.object({
+    type: z.literal("use_skill"),
+    payload: z.object({
+      skillId: z.enum(SKILL_IDS),
     }),
   }),
 ]);
@@ -82,6 +146,7 @@ export const playerStateSchema = z.object({
   characterId: z.string().uuid(),
   x: z.number(),
   y: z.number(),
+  mapId: mapIdSchema,
   characterClass: characterClassInWorldSchema,
   characterName: z.string().min(1).max(64),
   level: z.number().int().positive(),
@@ -118,6 +183,9 @@ export const derivedStatsSchema = z.object({
   defense: z.number().int().nonnegative(),
   moveSpeed: z.number().positive(),
   worldMoveSpeed: z.number().positive(),
+  power: z.number().int().nonnegative(),
+  critChance: z.number().min(0).max(1),
+  dodgeChance: z.number().min(0).max(1),
 });
 
 export const progressionRuneSchema = z.object({
@@ -165,12 +233,60 @@ export const worldCombatConfigSchema = z.object({
   mobAttackCooldownMs: z.number().int().positive(),
 });
 
+export const npcPanelActionSchema = z.object({
+  actionId: z.string().min(1),
+  label: z.string().min(1),
+  description: z.string().min(1),
+  disabled: z.boolean(),
+  emphasis: z.enum(["primary", "muted", "danger"]).default("primary"),
+});
+
+export type NpcPanelAction = z.infer<typeof npcPanelActionSchema>;
+
+export const npcPanelViewSchema = z.object({
+  npcId: z.string().min(1),
+  npcName: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().min(1),
+  hint: z.string().min(1).nullable().default(null),
+  actions: z.array(npcPanelActionSchema),
+});
+
+export type NpcPanelView = z.infer<typeof npcPanelViewSchema>;
+
+export const craftStateSchema = z.object({
+  active: z.boolean(),
+  recipeId: recipeIdSchema.nullable(),
+  progress: z.number().min(0).max(1),
+  startedAt: z.number().int().nullable(),
+  completesAt: z.number().int().nullable(),
+  status: z.enum(["idle", "started", "cancelled", "completed"]),
+});
+
+export const gatherStateSchema = z.object({
+  active: z.boolean(),
+  nodeId: z.string().min(1).nullable(),
+  resourceType: gatherResourceTypeSchema.nullable(),
+  progress: z.number().min(0).max(1),
+  startedAt: z.number().int().nullable(),
+  completesAt: z.number().int().nullable(),
+  yieldItemId: itemIdSchema.nullable(),
+  yieldAmount: z.number().int().positive().nullable(),
+  status: z.enum(["idle", "started", "cancelled", "completed"]),
+});
+
+export const questUpdateSchema = z.object({
+  questId: questIdSchema,
+  status: z.enum(["available", "active", "ready", "completed"]),
+  progress: z.number().int().nonnegative(),
+});
+
 export const worldServerMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("welcome"),
     payload: z.object({
       characterId: z.string().uuid(),
-      mapId: z.string(),
+      mapId: mapIdSchema,
       position: positionSchema,
       health: z.number().int().nonnegative(),
       maxHealth: z.number().int().positive(),
@@ -180,6 +296,25 @@ export const worldServerMessageSchema = z.discriminatedUnion("type", [
       mobs: z.array(mobStateSchema).default([]),
       loot: z.array(lootDropSchema).default([]),
       inventory: z.record(z.string(), z.number().int().nonnegative()).default({}),
+      craftState: craftStateSchema.default({
+        active: false,
+        recipeId: null,
+        progress: 0,
+        startedAt: null,
+        completesAt: null,
+        status: "idle",
+      }),
+      gatherState: gatherStateSchema.default({
+        active: false,
+        nodeId: null,
+        resourceType: null,
+        progress: 0,
+        startedAt: null,
+        completesAt: null,
+        yieldItemId: null,
+        yieldAmount: null,
+        status: "idle",
+      }),
     }),
   }),
   z.object({
@@ -197,8 +332,20 @@ export const worldServerMessageSchema = z.discriminatedUnion("type", [
     }),
   }),
   z.object({
+    type: z.literal("craft_state"),
+    payload: craftStateSchema,
+  }),
+  z.object({
+    type: z.literal("gather_state"),
+    payload: gatherStateSchema,
+  }),
+  z.object({
     type: z.literal("progression"),
     payload: progressionSnapshotSchema,
+  }),
+  z.object({
+    type: z.literal("position_correction"),
+    payload: positionSchema,
   }),
   z.object({
     type: z.literal("respawned"),
@@ -216,6 +363,8 @@ export const worldServerMessageSchema = z.discriminatedUnion("type", [
       targetId: z.string().uuid(),
       damage: z.number().int().nonnegative(),
       targetHealth: z.number().int().nonnegative(),
+      isCritical: z.boolean().optional(),
+      isDodged: z.boolean().optional(),
     }),
   }),
   z.object({
@@ -228,6 +377,21 @@ export const worldServerMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("pong"),
     payload: z.object({ serverTime: z.number() }),
+  }),
+  z.object({
+    type: z.literal("npc_panel"),
+    payload: npcPanelViewSchema,
+  }),
+  z.object({
+    type: z.literal("map_changed"),
+    payload: z.object({
+      mapId: mapIdSchema,
+      position: positionSchema,
+    }),
+  }),
+  z.object({
+    type: z.literal("quest_update"),
+    payload: questUpdateSchema,
   }),
 ]);
 
