@@ -10,6 +10,7 @@ This folder contains the current curated production candidates for Myth Rune sta
 ## Package contents
 - `terrain/primary`: current best terrain candidates.
 - `terrain/fallback`: fallback terrain candidates from earlier rounds.
+- `terrain/external_library`: external tileset candidates staged from the repo root for map improvement and expansion work.
 - `terrain/reference`: terrain reference blocks for further prompting.
 - `props_buildings/primary`: selected extracted assets from 04 ready for manual naming and promotion.
 - `props_buildings/fallback_atlases`: full atlases kept as backup/reference.
@@ -24,4 +25,5 @@ This folder contains the current curated production candidates for Myth Rune sta
 ## Recommended next step
 - Rename the selected 04 props/buildings by function (`house_small`, `well`, `torch`, `crate`, etc).
 - Promote only the hand-checked winners into the runtime atlas.
+- Compare `terrain/external_library` candidates against the current safe hybrid before expanding into a second map sheet.
 - Keep trees/resources in a separate pass to avoid overloading the starter_town tileset semantics.

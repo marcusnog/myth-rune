@@ -11,6 +11,7 @@ import {
   type GatherAction,
   type SingleAction,
   type SingleAnimSpec,
+  type VisualRenderSpec,
   type VisualKey,
   type PlayerVisualKey,
 } from "../../data/sprites";
@@ -115,9 +116,18 @@ export class EntityRenderer {
 
   public createEntity(params: CreateEntityParams): RenderedEntity {
     const spec = VISUAL_SPECS[params.visual];
-    const shadow = this.scene.add.ellipse(params.x, params.y + 18, 24, 10, 0x000000, 0.3);
+    const render = this.renderSpecFor(params.visual);
+    const shadow = this.scene.add.ellipse(
+      params.x,
+      params.y + render.shadowOffsetY,
+      render.shadowWidth,
+      render.shadowHeight,
+      0x000000,
+      0.3,
+    );
     const sprite = this.scene.add.sprite(params.x, params.y, spec.textureKey);
     sprite.setScale(spec.scale);
+    sprite.setOrigin(render.originX, render.originY);
 
     const entity: RenderedEntity = {
       id: params.id,
@@ -138,13 +148,13 @@ export class EntityRenderer {
 
     if (params.isLocal) {
       entity.indicator = this.scene.add
-        .circle(params.x, params.y + 16, 13, 0x000000, 0)
+        .circle(params.x, params.y + render.indicatorOffsetY, 13, 0x000000, 0)
         .setStrokeStyle(1.5, 0x9cf5cb, 0.9);
     }
 
     if (params.name) {
       entity.nameTag = this.scene.add
-        .text(params.x, params.y - 26, params.name, {
+        .text(params.x, params.y + render.nameTagOffsetY, params.name, {
           fontFamily: "IBM Plex Mono",
           fontSize: "10px",
           color: "#dce7ff",
@@ -191,10 +201,11 @@ export class EntityRenderer {
   // -------------------------------------------------------------------------
 
   public setEntityPosition(entity: RenderedEntity, x: number, y: number): void {
+    const render = this.renderSpecFor(entity.visual);
     entity.sprite.setPosition(x, y);
-    entity.shadow.setPosition(x, y + 18);
-    entity.indicator?.setPosition(x, y + 16);
-    entity.nameTag?.setPosition(x, y - 26);
+    entity.shadow.setPosition(x, y + render.shadowOffsetY);
+    entity.indicator?.setPosition(x, y + render.indicatorOffsetY);
+    entity.nameTag?.setPosition(x, y + render.nameTagOffsetY);
     this.positionMobUi(entity, x, y);
 
     const relativeY = y - this.getWorldMinY();
@@ -978,17 +989,18 @@ export class EntityRenderer {
 
   private createMobUi(mobType: MobType, x: number, y: number): MobUi {
     const definition = MOB_PRESENTATION[mobType];
+    const render = this.renderSpecFor(definition.visualKey as VisualKey);
     const aura = this.scene.add
-      .ellipse(x, y + 16, 32, 14, definition.auraColor, 0.15)
+      .ellipse(x, y + render.mobAuraOffsetY, render.mobAuraWidth, render.mobAuraHeight, definition.auraColor, 0.15)
       .setStrokeStyle(1.5, 0xff5a5a, 0.45);
     const hpBarBack = this.scene.add
-      .rectangle(x, y - 28, 34, 5, 0x120707, 0.92)
+      .rectangle(x, y + render.hpBarOffsetY, 34, 5, 0x120707, 0.92)
       .setStrokeStyle(1, 0x3a1717, 0.9);
     const hpBarFill = this.scene.add
-      .rectangle(x - 16, y - 28, 32, 3, definition.hpBarColor, 0.96)
+      .rectangle(x - 16, y + render.hpBarOffsetY, 32, 3, definition.hpBarColor, 0.96)
       .setOrigin(0, 0.5);
     const levelTag = this.scene.add
-      .text(x, y - 38, `Lv.${definition.level} ${definition.name}`, {
+      .text(x, y + render.levelTagOffsetY, `Lv.${definition.level} ${definition.name}`, {
         fontFamily: "IBM Plex Mono",
         fontSize: "10px",
         color: "#ffd8a8",
@@ -1009,10 +1021,29 @@ export class EntityRenderer {
 
   private positionMobUi(entity: RenderedEntity, x: number, y: number): void {
     if (!entity.mobUi) return;
-    entity.mobUi.aura.setPosition(x, y + 17);
-    entity.mobUi.hpBarBack.setPosition(x, y - 28);
-    entity.mobUi.hpBarFill.setPosition(x - 16, y - 28);
-    entity.mobUi.levelTag.setPosition(x, y - 38);
+    const render = this.renderSpecFor(entity.visual);
+    entity.mobUi.aura.setPosition(x, y + render.mobAuraOffsetY);
+    entity.mobUi.hpBarBack.setPosition(x, y + render.hpBarOffsetY);
+    entity.mobUi.hpBarFill.setPosition(x - 16, y + render.hpBarOffsetY);
+    entity.mobUi.levelTag.setPosition(x, y + render.levelTagOffsetY);
+  }
+
+  private renderSpecFor(visual: VisualKey): Required<VisualRenderSpec> {
+    const render = VISUAL_SPECS[visual].render;
+    return {
+      originX: render?.originX ?? 0.5,
+      originY: render?.originY ?? 0.5,
+      shadowOffsetY: render?.shadowOffsetY ?? 18,
+      shadowWidth: render?.shadowWidth ?? 24,
+      shadowHeight: render?.shadowHeight ?? 10,
+      indicatorOffsetY: render?.indicatorOffsetY ?? 16,
+      nameTagOffsetY: render?.nameTagOffsetY ?? -26,
+      mobAuraOffsetY: render?.mobAuraOffsetY ?? 17,
+      mobAuraWidth: render?.mobAuraWidth ?? 32,
+      mobAuraHeight: render?.mobAuraHeight ?? 14,
+      hpBarOffsetY: render?.hpBarOffsetY ?? -28,
+      levelTagOffsetY: render?.levelTagOffsetY ?? -38,
+    };
   }
 
   private findPreferredMobTargetId(

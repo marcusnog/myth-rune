@@ -151,7 +151,7 @@ const MOB_TICK_S = 0.16;
 setInterval(() => {
   const players = room.allPlayers();
   void (async () => {
-    await tickPlayerActivities(pool);
+    await tickPlayerActivities(pool, redis);
     if (players.length === 0) {
       return;
     }

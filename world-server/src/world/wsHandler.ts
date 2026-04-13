@@ -20,7 +20,7 @@ import type pg from "pg";
 import * as characterRepository from "../repositories/characterRepository.js";
 import { verifyGameToken } from "../services/jwtService.js";
 import { findNearestWalkablePosition } from "../services/mapCollision.js";
-import { positionKey } from "../services/redisKeys.js";
+import { gatherCooldownKey, positionKey } from "../services/redisKeys.js";
 import { validateMove } from "../services/movement.js";
 import * as loot from "./loot.js";
 import * as mobs from "./mobs.js";
@@ -43,7 +43,6 @@ const MESSAGE_RATE_LIMITS: Readonly<Record<string, number>> = Object.freeze({
   gather_cancel: 2,
 });
 
-const gatherNodeCooldownUntil = new Map<string, number>();
 
 function sendJson(ws: WebSocket, obj: unknown): void {
   if (ws.readyState === ws.OPEN) {
@@ -78,6 +77,24 @@ async function withDb<T>(pool: pg.Pool, fn: (client: pg.PoolClient) => Promise<T
   const client = await pool.connect();
   try {
     return await fn(client);
+  } finally {
+    client.release();
+  }
+}
+
+async function withTransaction<T>(
+  pool: pg.Pool,
+  fn: (client: pg.PoolClient) => Promise<T>,
+): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await fn(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
   } finally {
     client.release();
   }
@@ -246,7 +263,9 @@ function applyXpGrant(
   self.stats = result.snapshot.stats;
   if (result.levelChanged) {
     self.health = self.stats.maxHealth;
-    void persistPlayerHealth(pool, self.characterId, self.health).catch(() => undefined);
+    void persistPlayerHealth(pool, self.characterId, self.health).catch((err: unknown) => {
+      console.error("[wsHandler] applyXpGrant: falha ao persistir saude:", err);
+    });
   } else {
     self.health = Math.min(self.health, self.stats.maxHealth);
   }
@@ -296,7 +315,9 @@ function handleEquipRune(
   self.health = Math.min(self.health, self.stats.maxHealth);
   sendProgressionSnapshot(ws, self);
   broadcastState(self.mapId);
-  void persistPlayerHealth(pool, self.characterId, self.health).catch(() => undefined);
+  void persistPlayerHealth(pool, self.characterId, self.health).catch((err: unknown) => {
+    console.error("[wsHandler] handleEquipRune: falha ao persistir saude:", err);
+  });
 }
 
 function handleEquipItem(
@@ -323,7 +344,9 @@ function handleEquipItem(
   void withDb(pool, async (client) => {
     await characterRepository.updateEquipment(client, self.characterId, self.equipment as any);
     await characterRepository.updateHealth(client, self.characterId, self.health);
-  }).catch(() => undefined);
+  }).catch((err: unknown) => {
+    console.error("[wsHandler] handleEquipItem: falha ao persistir equipamento:", err);
+  });
 }
 
 function handleRespawn(
@@ -336,14 +359,18 @@ function handleRespawn(
     sendError(ws, "RESPAWN", "Respawn so pode ser usado apos morrer.");
     return;
   }
-  const respawn = getRespawnPoint(self.mapId);
+  const previousMapId = self.mapId;
+  self.mapId = "default";
+  const respawn = getRespawnPoint("default");
   self.x = respawn.x;
   self.y = respawn.y;
   self.health = self.stats.maxHealth;
   self.invulnerableUntilMs = Date.now() + 1200;
+  room.setPlayerMap(self.characterId, "default", { x: self.x, y: self.y });
   sendJson(ws, {
     type: "respawned",
     payload: {
+      mapId: "default" as const,
       position: { x: self.x, y: self.y },
       health: self.health,
       maxHealth: self.stats.maxHealth,
@@ -354,9 +381,16 @@ function handleRespawn(
       ),
     },
   });
-  broadcastState(self.mapId);
-  void persistPlayerHealth(pool, self.characterId, self.health).catch(() => undefined);
-  void persistPlayerPosition(pool, redis, self).catch(() => undefined);
+  if (previousMapId !== "default") {
+    broadcastState(previousMapId);
+  }
+  broadcastState("default");
+  void persistPlayerHealth(pool, self.characterId, self.health).catch((err: unknown) => {
+    console.error("[wsHandler] handleRespawn: falha ao persistir saude:", err);
+  });
+  void persistPlayerPosition(pool, redis, self).catch((err: unknown) => {
+    console.error("[wsHandler] handleRespawn: falha ao persistir posicao:", err);
+  });
 }
 
 function handleAttack(
@@ -380,7 +414,9 @@ function handleAttack(
       sendQuestUpdates(ws, self, changedQuestIds);
       void withDb(pool, (client) =>
         characterRepository.updateQuestState(client, self.characterId, self.questState),
-      ).catch(() => undefined);
+      ).catch((err: unknown) => {
+        console.error("[wsHandler] handleAttack: falha ao persistir quest:", err);
+      });
     }
     loot.spawnLootForMobDeath(
       result.diedAt.mapId,
@@ -459,7 +495,9 @@ function handleAoeAttack(
       sendQuestUpdates(ws, self, [...changedQuestIds]);
       void withDb(pool, (client) =>
         characterRepository.updateQuestState(client, self.characterId, self.questState),
-      ).catch(() => undefined);
+      ).catch((err: unknown) => {
+        console.error("[wsHandler] handleAoeAttack: falha ao persistir quest:", err);
+      });
     }
     broadcastState(self.mapId);
   }
@@ -471,7 +509,7 @@ async function handlePickupLoot(
   self: ConnectedPlayer,
   payload: { dropId: string },
 ): Promise<void> {
-  await withDb(pool, async (client) => {
+  await withTransaction(pool, async (client) => {
     const row = await characterRepository.getCharacterById(client, self.characterId);
     if (!row) {
       sendError(ws, "NOT_FOUND", "Character not found");
@@ -487,7 +525,10 @@ async function handlePickupLoot(
     await syncInventoryQuestUpdates(client, ws, self, inventory);
     sendJson(ws, { type: "inventory", payload: { inventory } });
     broadcastState(self.mapId);
-  }).catch(() => undefined);
+  }).catch((err: unknown) => {
+    console.error("[wsHandler] handlePickupLoot falhou:", err);
+    sendError(ws, "ITEM", "Falha ao pegar item. Tente novamente.");
+  });
 }
 
 async function handleUseItem(
@@ -500,7 +541,7 @@ async function handleUseItem(
     sendError(ws, "ITEM", "Esse item nao pode ser usado agora.");
     return;
   }
-  await withDb(pool, async (client) => {
+  await withTransaction(pool, async (client) => {
     const row = await characterRepository.getCharacterById(client, self.characterId);
     if (!row) {
       sendError(ws, "NOT_FOUND", "Character not found");
@@ -517,7 +558,10 @@ async function handleUseItem(
     await syncInventoryQuestUpdates(client, ws, self, inventory);
     sendJson(ws, { type: "inventory", payload: { inventory } });
     sendProgressionSnapshot(ws, self);
-  }).catch(() => undefined);
+  }).catch((err: unknown) => {
+    console.error("[wsHandler] handleUseItem falhou:", err);
+    sendError(ws, "ITEM", "Falha ao usar item. Tente novamente.");
+  });
 }
 
 async function handleOpenNpcPanel(
@@ -544,7 +588,9 @@ async function handleOpenNpcPanel(
       return;
     }
     sendJson(ws, { type: "npc_panel", payload: panel });
-  }).catch(() => undefined);
+  }).catch((err: unknown) => {
+    console.error("[wsHandler] handleOpenNpcPanel falhou:", err);
+  });
 }
 
 async function handleNpcAction(
@@ -580,7 +626,10 @@ async function handleNpcAction(
       ...npcServices.getQuestIdsForNpc(payload.npcId),
       ...changedInventoryQuestIds,
     ]);
-  }).catch(() => undefined);
+  }).catch((err: unknown) => {
+    console.error("[wsHandler] handleNpcAction falhou:", err);
+    sendError(ws, "NPC", "Falha ao processar acao. Tente novamente.");
+  });
 }
 
 function handleMove(
@@ -608,7 +657,9 @@ function handleMove(
   }
   if (now - self.lastPersistAt >= POSITION_PERSIST_INTERVAL_MS) {
     self.lastPersistAt = now;
-    void persistPlayerPosition(pool, redis, self).catch(() => undefined);
+    void persistPlayerPosition(pool, redis, self).catch((err: unknown) => {
+      console.error("[wsHandler] handleMove: falha ao persistir posicao:", err);
+    });
   }
 }
 
@@ -627,7 +678,7 @@ async function handleCraftStart(
     sendError(ws, "CRAFT", "Receita desconhecida.");
     return;
   }
-  await withDb(pool, async (client) => {
+  await withTransaction(pool, async (client) => {
     const row = await characterRepository.getCharacterById(client, self.characterId);
     if (!row) {
       sendError(ws, "NOT_FOUND", "Character not found");
@@ -659,7 +710,10 @@ async function handleCraftStart(
     };
     sendJson(ws, { type: "inventory", payload: { inventory } });
     sendJson(ws, { type: "craft_state", payload: craftStatePayload(self, startedAt) });
-  }).catch(() => undefined);
+  }).catch((err: unknown) => {
+    console.error("[wsHandler] handleCraftStart falhou:", err);
+    sendError(ws, "CRAFT", "Falha ao iniciar craft. Tente novamente.");
+  });
 }
 
 async function handleCraftCancel(
@@ -673,7 +727,7 @@ async function handleCraftCancel(
   }
   const task = self.activeCraft;
   self.activeCraft = null;
-  await withDb(pool, async (client) => {
+  await withTransaction(pool, async (client) => {
     const row = await characterRepository.getCharacterById(client, self.characterId);
     const inventory = row?.inventory ?? {};
     for (const material of task.materials) {
@@ -693,17 +747,20 @@ async function handleCraftCancel(
         status: "cancelled",
       },
     });
-  }).catch(() => undefined);
+  }).catch((err: unknown) => {
+    console.error("[wsHandler] handleCraftCancel falhou:", err);
+  });
 }
 
 async function handleGatherStart(
   ws: WebSocket,
   pool: pg.Pool,
+  redis: Redis,
   self: ConnectedPlayer,
   payload: { nodeId: string; resourceType: GatherResourceType },
 ): Promise<void> {
   if (self.activeGather) {
-    sendError(ws, "GATHER", "Ja existe uma coleta em andamento.");
+    sendError(ws, "GATHER", "Ja existe uma coleta em andando.");
     return;
   }
   const node = findResourceNode(self.mapId, payload.nodeId);
@@ -711,7 +768,9 @@ async function handleGatherStart(
     sendError(ws, "GATHER", "Nodo invalido.");
     return;
   }
-  if ((gatherNodeCooldownUntil.get(`${self.mapId}:${node.nodeId}`) ?? 0) > Date.now()) {
+  const cdKey = gatherCooldownKey(self.mapId, node.nodeId);
+  const onCooldown = await redis.exists(cdKey).catch(() => 0);
+  if (onCooldown > 0) {
     sendError(ws, "GATHER", "Esse recurso ainda nao reapareceu.");
     return;
   }
@@ -726,7 +785,7 @@ async function handleGatherStart(
       return;
     }
     const inventory = row.inventory ?? {};
-    if ((inventory[node.requiredTool] ?? 0) <= 0) {
+    if (node.requiredTool && (inventory[node.requiredTool] ?? 0) <= 0) {
       sendError(ws, "GATHER", "Ferramenta obrigatoria ausente.");
       return;
     }
@@ -740,7 +799,10 @@ async function handleGatherStart(
       completesAt: startedAt + node.gatherTimeMs,
     };
     sendJson(ws, { type: "gather_state", payload: gatherStatePayload(self, startedAt) });
-  }).catch(() => undefined);
+  }).catch((err: unknown) => {
+    console.error("[wsHandler] handleGatherStart falhou:", err);
+    sendError(ws, "GATHER", "Falha ao iniciar coleta. Tente novamente.");
+  });
 }
 
 function handleGatherCancel(ws: WebSocket, self: ConnectedPlayer): void {
@@ -844,14 +906,21 @@ async function authenticateConnection(
     } catch {}
     room.removePlayer(row.id);
   }
+  // Always reconnect to the default (starter) map so players are never stuck in
+  // a non-default map after a server restart or a session that ended mid-travel.
+  const reconnectMapId: ConnectedPlayer["mapId"] = "default";
+  const reconnectSpawn =
+    row.map_id === "default"
+      ? { x: row.x, y: row.y }
+      : getRespawnPoint("default");
   const self: ConnectedPlayer = {
     characterId: row.id,
     userId: row.user_id,
     characterClass: row.character_class,
     characterName: row.name,
-    mapId: row.map_id,
-    x: row.x,
-    y: row.y,
+    mapId: reconnectMapId,
+    x: reconnectSpawn.x,
+    y: reconnectSpawn.y,
     health: Math.max(0, Math.min(row.health, initialSnapshot.stats.maxHealth)),
     invulnerableUntilMs: 0,
     lastMoveAt: Date.now(),
@@ -985,7 +1054,7 @@ export function attachWorldHandlers(
           void handleCraftCancel(ws, pool, self);
           return;
         case "gather_start":
-          void handleGatherStart(ws, pool, self, msg.payload);
+          void handleGatherStart(ws, pool, redis, self, msg.payload);
           return;
         case "gather_cancel":
           handleGatherCancel(ws, self);
@@ -1010,7 +1079,7 @@ export function attachWorldHandlers(
       if (self.activeCraft) {
         const task = self.activeCraft;
         self.activeCraft = null;
-        void withDb(pool, async (client) => {
+        void withTransaction(pool, async (client) => {
           const row = await characterRepository.getCharacterById(client, self.characterId);
           const inventory = row?.inventory ?? {};
           for (const material of task.materials) {
@@ -1018,22 +1087,26 @@ export function attachWorldHandlers(
           }
           await characterRepository.updateInventory(client, self.characterId, inventory);
           await syncInventoryQuestUpdates(client, ws, self, inventory);
-        }).catch(() => undefined);
+        }).catch((err: unknown) => {
+          console.error("[wsHandler] disconnect craft refund falhou:", err);
+        });
       }
-      void persistPlayerPosition(pool, redis, self).catch(() => undefined);
+      void persistPlayerPosition(pool, redis, self).catch((err: unknown) => {
+        console.error("[wsHandler] disconnect: falha ao persistir posicao:", err);
+      });
       room.removePlayer(characterId);
       broadcastState(self.mapId);
     });
   });
 }
 
-export async function tickPlayerActivities(pool: pg.Pool): Promise<void> {
+export async function tickPlayerActivities(pool: pg.Pool, redis: Redis): Promise<void> {
   const now = Date.now();
   for (const self of room.allPlayers()) {
     if (self.activeCraft && now >= self.activeCraft.completesAt) {
       const task = self.activeCraft;
       self.activeCraft = null;
-      await withDb(pool, async (client) => {
+      await withTransaction(pool, async (client) => {
         const row = await characterRepository.getCharacterById(client, self.characterId);
         const inventory = row?.inventory ?? {};
         inventory[task.outputItemId] = (inventory[task.outputItemId] ?? 0) + task.outputQuantity;
@@ -1051,14 +1124,22 @@ export async function tickPlayerActivities(pool: pg.Pool): Promise<void> {
             status: "completed",
           },
         });
-      }).catch(() => undefined);
+      }).catch((err: unknown) => {
+        console.error("[wsHandler] tickPlayerActivities craft completion falhou:", err);
+        sendJson(self.socket, {
+          type: "error",
+          payload: { code: "CRAFT", message: "Falha ao concluir craft. Contate o suporte." },
+        });
+      });
     }
 
     if (self.activeGather && now >= self.activeGather.completesAt) {
       const task = self.activeGather;
       self.activeGather = null;
-      gatherNodeCooldownUntil.set(`${self.mapId}:${task.nodeId}`, now + 300000);
-      await withDb(pool, async (client) => {
+      void redis.setex(gatherCooldownKey(self.mapId, task.nodeId), 300, "1").catch((err: unknown) => {
+        console.error("[wsHandler] falha ao persistir cooldown de gather:", err);
+      });
+      await withTransaction(pool, async (client) => {
         const row = await characterRepository.getCharacterById(client, self.characterId);
         const inventory = row?.inventory ?? {};
         inventory[task.yieldItemId] = (inventory[task.yieldItemId] ?? 0) + task.yieldAmount;
@@ -1079,7 +1160,13 @@ export async function tickPlayerActivities(pool: pg.Pool): Promise<void> {
             status: "completed",
           },
         });
-      }).catch(() => undefined);
+      }).catch((err: unknown) => {
+        console.error("[wsHandler] tickPlayerActivities gather completion falhou:", err);
+        sendJson(self.socket, {
+          type: "error",
+          payload: { code: "GATHER", message: "Falha ao concluir coleta. Contate o suporte." },
+        });
+      });
       applyXpGrant(self.socket, pool, self, GATHER_XP[task.resourceType]);
     }
   }

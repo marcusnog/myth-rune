@@ -14,6 +14,7 @@ import {
   type MobType,
   type WorldClientMessage,
   type WorldServerMessage,
+  type LootDrop,
 } from "@myth-of-rune/shared";
 import {
   STARTER_VILLAGE_NPCS,
@@ -25,7 +26,7 @@ import type {
   InventorySlotView,
   NpcPanelView as HudNpcPanelView,
 } from "./ui/hudModels";
-import { ITEM_DEFINITIONS, type ItemId } from "./data/items";
+import { ITEM_DEFINITIONS, type ItemId, type ItemDefinition } from "./data/items";
 import { CraftingSystem } from "./systems/crafting/craftingSystem";
 import type { ResourceNodeEntity } from "./entities/resourceNodes/resourceNode";
 import { GatheringSystem } from "./systems/gathering/gatheringSystem";
@@ -59,16 +60,7 @@ import { BiomeSystem, type BiomeType } from "./systems/biome/biomeSystem";
 import { SkillSystem } from "./systems/skills/skillSystem";
 import { FootstepSystem } from "./systems/footstep/footstepSystem";
 
-type LootDropPayload = Extract<
-  WorldServerMessage,
-  { type: "welcome" | "state" }
->["payload"] extends infer P
-  ? P extends { loot: infer L }
-    ? L extends ReadonlyArray<infer Entry>
-      ? Entry
-      : never
-    : never
-  : never;
+type LootDropPayload = LootDrop;
 
 interface LootDropEntity {
   dropId: string;
@@ -1075,7 +1067,7 @@ export class WorldScene extends Phaser.Scene {
       }
     }
     if (!best) return null;
-    const definition = (ITEM_DEFINITIONS as Record<string, { name?: string }>)[best.itemId];
+    const definition = (ITEM_DEFINITIONS as Record<string, ItemDefinition | undefined>)[best.itemId];
     const name = definition?.name ?? best.itemId;
     return { drop: best, distance: bestDist, label: `${name} x${best.amount}` };
   }
@@ -1083,34 +1075,25 @@ export class WorldScene extends Phaser.Scene {
   private syncLoot(entries: ReadonlyArray<LootDropPayload>): void {
     const seen = new Set<string>();
     for (const entry of entries) {
-      const e = entry as any;
-      const dropId = e.dropId as string;
+      const { dropId, x, y, itemId, amount } = entry;
       seen.add(dropId);
       const existing = this.lootDrops.get(dropId);
       if (existing) {
-        const nx = e.x as number;
-        const ny = e.y as number;
-        const nAmount = e.amount as number;
         if (
-          Math.abs(nx - existing.x) > LOOT_POS_EPS ||
-          Math.abs(ny - existing.y) > LOOT_POS_EPS
+          Math.abs(x - existing.x) > LOOT_POS_EPS ||
+          Math.abs(y - existing.y) > LOOT_POS_EPS
         ) {
-          existing.x = nx;
-          existing.y = ny;
-          existing.marker.setPosition(Math.round(nx), Math.round(ny));
-          existing.marker.setDepth(ny - this.worldMinY + 2);
+          existing.x = x;
+          existing.y = y;
+          existing.marker.setPosition(Math.round(x), Math.round(y));
+          existing.marker.setDepth(y - this.worldMinY + 2);
         }
-        if (nAmount !== existing.amount) {
-          existing.amount = nAmount;
-          existing.label.setText(String(nAmount));
+        if (amount !== existing.amount) {
+          existing.amount = amount;
+          existing.label.setText(String(amount));
         }
         continue;
       }
-
-      const x = e.x as number;
-      const y = e.y as number;
-      const itemId = e.itemId as string;
-      const amount = e.amount as number;
 
       const rx = Math.round(x);
       const ry = Math.round(y);
@@ -1130,10 +1113,8 @@ export class WorldScene extends Phaser.Scene {
       lootRing.strokeCircle(0, 0, 26);
       floater.add(lootRing);
 
-      const definition = (ITEM_DEFINITIONS as Record<string, any>)[itemId];
-      const icon = definition?.icon as
-        | { src: string; col: number; row: number; size: number }
-        | undefined;
+      const definition = (ITEM_DEFINITIONS as Record<string, ItemDefinition | undefined>)[itemId];
+      const icon = definition?.icon;
 
       let usedRealIcon = false;
       if (icon) {
@@ -1155,7 +1136,7 @@ export class WorldScene extends Phaser.Scene {
 
       if (!usedRealIcon) {
         const gfx = this.add.graphics();
-        const accent = (definition?.accent as string | undefined) ?? "#ffe480";
+        const accent = definition?.accent ?? "#ffe480";
         const color = Phaser.Display.Color.HexStringToColor(accent).color;
         gfx.fillStyle(color, 0.95);
         gfx.beginPath();
@@ -1417,6 +1398,7 @@ export class WorldScene extends Phaser.Scene {
         return;
       }
       case "respawned": {
+        this.currentMapId = msg.payload.mapId;
         this.ensureLocalEntity(
           this.localId,
           msg.payload.position.x,
@@ -1430,8 +1412,9 @@ export class WorldScene extends Phaser.Scene {
           });
         }
         this.applyProgressionSnapshot(msg.payload.progression, false);
+        this.syncMapPresentation();
         this.initData.hud.closeDeathModal();
-        this.initData.hud.setStatus("Respawnado");
+        this.initData.hud.setStatus("Respawnado na vila");
         return;
       }
       case "combat_event": {

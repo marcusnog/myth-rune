@@ -23,6 +23,21 @@ export interface SingleAnimSpec {
   loop: boolean;
 }
 
+export interface VisualRenderSpec {
+  originX?: number;
+  originY?: number;
+  shadowOffsetY?: number;
+  shadowWidth?: number;
+  shadowHeight?: number;
+  indicatorOffsetY?: number;
+  nameTagOffsetY?: number;
+  mobAuraOffsetY?: number;
+  mobAuraWidth?: number;
+  mobAuraHeight?: number;
+  hpBarOffsetY?: number;
+  levelTagOffsetY?: number;
+}
+
 export interface VisualSpec {
   textureKey: string;
   path: string;
@@ -30,6 +45,7 @@ export interface VisualSpec {
   frameHeight: number;
   columns: number;
   scale: number;
+  render?: VisualRenderSpec;
   directional: Record<DirectionalAction, DirectionalAnimSpec>;
   gather?: Partial<Record<GatherAction, DirectionalAnimSpec>>;
   single: Record<SingleAction, SingleAnimSpec>;
@@ -207,7 +223,18 @@ export const VISUAL_SPECS: Record<VisualKey, VisualSpec> = {
     frameWidth: 192,
     frameHeight: 192,
     columns: 8,
-    scale: 0.75,
+    scale: 0.68,
+    render: {
+      originY: 0.78,
+      shadowOffsetY: 28,
+      shadowWidth: 34,
+      shadowHeight: 14,
+      mobAuraOffsetY: 28,
+      mobAuraWidth: 40,
+      mobAuraHeight: 16,
+      hpBarOffsetY: -100,
+      levelTagOffsetY: -114,
+    },
     directional: {
       walk: { rows: DIRECTIONAL_ROWS.walk, frames: 8, fps: 7, loop: true },
       idle: { rows: DIRECTIONAL_ROWS.idle, frames: 8, fps: 5, loop: true },

@@ -17,7 +17,14 @@ const characterClassInWorldSchema = z.enum([
 ]);
 
 /** Tipos de recurso que o servidor reconhece para validação de XP de coleta. */
-export const gatherResourceTypeSchema = z.enum(["oak_tree", "pine_tree", "stone_deposit"]);
+export const gatherResourceTypeSchema = z.enum([
+  "oak_tree",
+  "pine_tree",
+  "stone_deposit",
+  "copper_deposit",
+  "iron_deposit",
+  "silver_deposit",
+]);
 export type GatherResourceType = z.infer<typeof gatherResourceTypeSchema>;
 
 /** XP concedida por tipo de recurso coletado. Centralizado no shared para evitar divergência. */
@@ -25,6 +32,9 @@ export const GATHER_XP: Readonly<Record<GatherResourceType, number>> = {
   oak_tree: 8,
   pine_tree: 8,
   stone_deposit: 12,
+  copper_deposit: 14,
+  iron_deposit: 16,
+  silver_deposit: 20,
 };
 
 export const recipeIdSchema = z.enum(
@@ -350,6 +360,7 @@ export const worldServerMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("respawned"),
     payload: z.object({
+      mapId: mapIdSchema,
       position: positionSchema,
       health: z.number().int().nonnegative(),
       maxHealth: z.number().int().positive(),

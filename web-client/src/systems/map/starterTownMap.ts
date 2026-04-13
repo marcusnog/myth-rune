@@ -20,11 +20,26 @@ export const MAP_PROPS_ATLAS_METADATA_KEY = "map:starter-town-props-meta";
 export const MAP_PROPS_LAYOUT_KEY = "map:starter-town-props-layout";
 export const MAP_RESOURCE_ATLAS_IMAGE_KEY = "map:starter-town-resources";
 export const MAP_RESOURCE_ATLAS_METADATA_KEY = "map:starter-town-resources-meta";
+export const MAP_AUTUMN_TREE_WIND_TEXTURE_KEY = "map:starter-town-autumn-tree-wind";
 export const MAP_SAFE_CENTER_TILE_X = 64.5;
 export const MAP_SAFE_CENTER_TILE_Y = 64.5;
 export const RESOURCE_OBJECT_LAYER = "resource_nodes";
 export const WORLD_WIDTH = 800;
 export const WORLD_HEIGHT = 600;
+
+const AUTUMN_TREE_WIND_ANIM_KEY = "map:starter-town-autumn-tree-wind:loop";
+
+const STONE_VARIANT_BY_NODE_ID: Readonly<
+  Record<
+    string,
+    Extract<ResourceNodeType, "stone_deposit" | "copper_deposit" | "iron_deposit" | "silver_deposit">
+  >
+> = Object.freeze({
+  stone_1: "stone_deposit",
+  stone_2: "copper_deposit",
+  stone_3: "iron_deposit",
+  stone_4: "silver_deposit",
+});
 
 const STARTER_TOWN_LAYER_DEPTHS = [
   ["ground", -100],
@@ -86,6 +101,36 @@ interface RuntimePropLayout {
   placements?: RuntimePropPlacement[];
 }
 
+interface AmbientAnimatedPropPlacement {
+  textureKey: string;
+  animationKey: string;
+  tileX: number;
+  tileY: number;
+  frameCount: number;
+  frameRate: number;
+  offsetX?: number;
+  offsetY?: number;
+  depthBias?: number;
+  blocker?: RuntimePropBlockerSpec;
+}
+
+const AMBIENT_ANIMATED_PROP_PLACEMENTS: readonly AmbientAnimatedPropPlacement[] = Object.freeze([
+  {
+    textureKey: MAP_AUTUMN_TREE_WIND_TEXTURE_KEY,
+    animationKey: AUTUMN_TREE_WIND_ANIM_KEY,
+    tileX: 54,
+    tileY: 66,
+    frameCount: 16,
+    frameRate: 10,
+    depthBias: 0.55,
+    blocker: {
+      width: 20,
+      height: 12,
+      offsetY: -2,
+    },
+  },
+]);
+
 export interface StarterTownPropBlocker {
   left: number;
   top: number;
@@ -113,7 +158,7 @@ export interface StarterTownWorld {
   /** Altura de um tile em pixels. Pode diferir de tileWidth em tilesets não-quadrados. */
   tileHeight: number;
   resourceNodes: ResourceNodeMapConfig[];
-  propSprites: readonly Phaser.GameObjects.Image[];
+  propSprites: readonly Phaser.GameObjects.GameObject[];
   propBlockers: readonly StarterTownPropBlocker[];
   animatedTileGroups: readonly AnimatedTileGroup[];
 }
@@ -158,6 +203,16 @@ function asInt(value: unknown, fallback: number): number {
   return Math.floor(asNumber(value, fallback));
 }
 
+function resolveRuntimeResourceType(
+  typeRaw: ResourceNodeType,
+  nodeId: string,
+): ResourceNodeType {
+  if (typeRaw !== "stone_deposit") {
+    return typeRaw;
+  }
+  return STONE_VARIANT_BY_NODE_ID[nodeId] ?? typeRaw;
+}
+
 function resolveMapCenterTile(tilemap: Phaser.Tilemaps.Tilemap): {
   centerX: number;
   centerY: number;
@@ -193,7 +248,6 @@ function parseResourceObjects(tilemap: Phaser.Tilemaps.Tilemap): ResourceNodeMap
       continue;
     }
 
-    const definition = RESOURCE_NODE_DEFINITIONS[typeRaw as ResourceNodeType];
     const tileX = asInt(
       readProperty(raw.properties, "tileX"),
       Math.floor((raw.x ?? 0) / tileWidth),
@@ -202,12 +256,15 @@ function parseResourceObjects(tilemap: Phaser.Tilemaps.Tilemap): ResourceNodeMap
       readProperty(raw.properties, "tileY"),
       Math.floor((raw.y ?? 0) / tileHeight),
     );
+    const nodeId =
+      (typeof readProperty(raw.properties, "nodeId") === "string"
+        ? (readProperty(raw.properties, "nodeId") as string)
+        : raw.name) ?? `${typeRaw}:${tileX}:${tileY}`;
+    const resolvedType = resolveRuntimeResourceType(typeRaw as ResourceNodeType, nodeId);
+    const definition = RESOURCE_NODE_DEFINITIONS[resolvedType];
     result.push({
-      nodeId:
-        (typeof readProperty(raw.properties, "nodeId") === "string"
-          ? (readProperty(raw.properties, "nodeId") as string)
-          : raw.name) ?? `${typeRaw}:${tileX}:${tileY}`,
-      type: typeRaw as ResourceNodeType,
+      nodeId,
+      type: resolvedType,
       tileX,
       tileY,
       quantity: Math.max(
@@ -320,6 +377,14 @@ export function preloadStarterTownAssets(scene: Phaser.Scene): void {
   scene.load.json(MAP_PROPS_LAYOUT_KEY, "/maps/starter_town/runtime_props/layout.json");
   scene.load.image(MAP_RESOURCE_ATLAS_IMAGE_KEY, "/maps/starter_town/runtime_resources/atlas.png");
   scene.load.json(MAP_RESOURCE_ATLAS_METADATA_KEY, "/maps/starter_town/runtime_resources/atlas.json");
+  scene.load.spritesheet(
+    MAP_AUTUMN_TREE_WIND_TEXTURE_KEY,
+    "/sprites/environment/animated_autumn_tree_wind.png",
+    {
+      frameWidth: 64,
+      frameHeight: 64,
+    },
+  );
 }
 
 export function ensureStarterTownTileFrames(scene: Phaser.Scene): void {
@@ -402,6 +467,23 @@ function resolveAnimatedWaterFrameIndices(scene: Phaser.Scene): readonly number[
   return indices.length === 3 ? indices : [21, 22, 23];
 }
 
+function ensureAmbientAnimatedPropAnimations(scene: Phaser.Scene): void {
+  for (const placement of AMBIENT_ANIMATED_PROP_PLACEMENTS) {
+    if (scene.anims.exists(placement.animationKey)) {
+      continue;
+    }
+    scene.anims.create({
+      key: placement.animationKey,
+      frames: scene.anims.generateFrameNumbers(placement.textureKey, {
+        start: 0,
+        end: placement.frameCount - 1,
+      }),
+      frameRate: placement.frameRate,
+      repeat: -1,
+    });
+  }
+}
+
 function buildRuntimePropSprites(
   scene: Phaser.Scene,
   tileWidth: number,
@@ -409,7 +491,7 @@ function buildRuntimePropSprites(
   worldMinX: number,
   worldMinY: number,
 ): {
-  propSprites: Phaser.GameObjects.Image[];
+  propSprites: Phaser.GameObjects.GameObject[];
   propBlockers: StarterTownPropBlocker[];
 } {
   const atlas = scene.cache.json.get(MAP_PROPS_ATLAS_METADATA_KEY) as
@@ -423,7 +505,7 @@ function buildRuntimePropSprites(
 
   ensureStarterTownPropFrames(scene);
 
-  const propSprites: Phaser.GameObjects.Image[] = [];
+  const propSprites: Phaser.GameObjects.GameObject[] = [];
   const propBlockers: StarterTownPropBlocker[] = [];
 
   for (const placement of layout.placements) {
@@ -443,6 +525,33 @@ function buildRuntimePropSprites(
       .setOrigin(0.5, 1)
       .setDepth(worldY - worldMinY + (placement.depthBias ?? 0.5));
 
+    propSprites.push(sprite);
+
+    if (placement.blocker) {
+      const blockerCenterX = worldX + (placement.blocker.offsetX ?? 0);
+      const blockerBottomY = worldY + (placement.blocker.offsetY ?? 0);
+      propBlockers.push({
+        left: blockerCenterX - placement.blocker.width / 2,
+        right: blockerCenterX + placement.blocker.width / 2,
+        top: blockerBottomY - placement.blocker.height,
+        bottom: blockerBottomY,
+      });
+    }
+  }
+
+  ensureAmbientAnimatedPropAnimations(scene);
+
+  for (const placement of AMBIENT_ANIMATED_PROP_PLACEMENTS) {
+    const worldX =
+      worldMinX + placement.tileX * tileWidth + tileWidth / 2 + (placement.offsetX ?? 0);
+    const worldY =
+      worldMinY + (placement.tileY + 1) * tileHeight + (placement.offsetY ?? 0);
+
+    const sprite = scene.add
+      .sprite(worldX, worldY, placement.textureKey, 0)
+      .setOrigin(0.5, 1)
+      .setDepth(worldY - worldMinY + (placement.depthBias ?? 0.5));
+    sprite.play(placement.animationKey);
     propSprites.push(sprite);
 
     if (placement.blocker) {

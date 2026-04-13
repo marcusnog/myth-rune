@@ -34,4 +34,25 @@ export const RESOURCE_NODE_RUNTIME_VISUALS: Readonly<
     depthBias: 0.18,
     offsetY: 2,
   },
+  copper_deposit: {
+    frame: "copper_deposit_resource_a",
+    originX: 0.5,
+    originY: 1,
+    depthBias: 0.18,
+    offsetY: 2,
+  },
+  iron_deposit: {
+    frame: "iron_deposit_resource_a",
+    originX: 0.5,
+    originY: 1,
+    depthBias: 0.18,
+    offsetY: 2,
+  },
+  silver_deposit: {
+    frame: "silver_deposit_resource_a",
+    originX: 0.5,
+    originY: 1,
+    depthBias: 0.18,
+    offsetY: 2,
+  },
 } as const;

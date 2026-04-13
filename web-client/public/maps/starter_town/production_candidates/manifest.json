@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-09T05:17:52.483Z",
+  "generatedAt": "2026-04-12T05:34:09.132Z",
   "terrainPrimary": [
     {
       "source": "web-client/public/maps/starter_town/nanobanana_04/tileset_04_safe_hybrid.png",
@@ -27,6 +27,33 @@
       "source": "web-client/public/maps/starter_town/tileset_01_safe_hybrid.png",
       "output": "terrain/fallback/tileset_01_safe_hybrid.png",
       "note": "Fallback terrain candidate from 01."
+    }
+  ],
+  "externalTilesetLibrary": [
+    {
+      "source": "01.png",
+      "output": "terrain/external_library/01_candidate_tileset.png",
+      "note": "External terrain candidate 01: strong ground-transition atlas for map polish and expansion studies."
+    },
+    {
+      "source": "02.png",
+      "output": "terrain/external_library/02_candidate_tileset.png",
+      "note": "External terrain candidate 02: alternate terrain mix with shoreline and stone-path coverage."
+    },
+    {
+      "source": "03.png",
+      "output": "terrain/external_library/03_candidate_tileset.png",
+      "note": "External terrain candidate 03: darker terrain balance useful for forest-edge expansion."
+    },
+    {
+      "source": "04.png",
+      "output": "terrain/external_library/04_candidate_tileset.png",
+      "note": "External terrain candidate 04: mixed terrain plus structure/prop sheet useful as an expansion board."
+    },
+    {
+      "source": "sprites-tileset.png",
+      "output": "terrain/external_library/sprites_tileset_reference.png",
+      "note": "External modular reference sheet with terrain, structures, props and transitions for future atlas slicing."
     }
   ],
   "terrainReference": [

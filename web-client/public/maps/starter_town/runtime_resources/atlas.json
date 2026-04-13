@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-09T06:43:24.198Z",
+  "generatedAt": "2026-04-12T05:25:38.482Z",
   "image": "atlas.png",
   "items": {
     "oak_tree_resource_a": {
@@ -33,6 +33,30 @@
       "y": 81,
       "width": 44,
       "height": 25
+    },
+    "silver_deposit_resource_a": {
+      "category": "ore",
+      "label": "Silver deposit resource A",
+      "x": 326,
+      "y": 77,
+      "width": 29,
+      "height": 29
+    },
+    "iron_deposit_resource_a": {
+      "category": "ore",
+      "label": "Iron deposit resource A",
+      "x": 367,
+      "y": 80,
+      "width": 29,
+      "height": 26
+    },
+    "copper_deposit_resource_a": {
+      "category": "ore",
+      "label": "Copper deposit resource A",
+      "x": 408,
+      "y": 83,
+      "width": 29,
+      "height": 23
     }
   }
 }

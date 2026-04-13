@@ -65,6 +65,10 @@ function isNearWhite(r, g, b) {
   return r >= 235 && g >= 235 && b >= 235;
 }
 
+function shouldCopyPixel(r, g, b, a) {
+  return isDetectableContent(r, g, b, a);
+}
+
 function isDetectableContent(r, g, b, a) {
   if (a === 0) return false;
   // Reference has opaque black background; treat near-black as background.
@@ -156,43 +160,88 @@ function findColumnsInBand(src, band) {
 }
 
 function computeContentBounds(src, rect) {
-  let minX = rect.x1;
-  let minY = rect.y1;
-  let maxX = rect.x0;
-  let maxY = rect.y0;
-  let found = false;
-
-  // The reference includes label text below each sprite; to avoid capturing it
-  // in the crop, scan only the upper portion of the band.
   const rectH = rect.y1 - rect.y0 + 1;
-  const yScanMax = rect.y0 + Math.floor(rectH * 0.7);
-  // The sheet also includes section headings near the far left ("idle", "walk", ...).
-  // Skip a small left margin within each candidate rect to avoid capturing them.
-  const xScanMin = rect.x0 + Math.min(24, Math.floor((rect.x1 - rect.x0 + 1) * 0.15));
+  const rectW = rect.x1 - rect.x0 + 1;
+  const yScanMax = rect.y0 + Math.floor(rectH * 0.82);
+  const localHeight = yScanMax - rect.y0 + 1;
+  const visited = new Uint8Array(rectW * localHeight);
+
+  let best = null;
+  const centerX = (rect.x0 + rect.x1) / 2;
+  const centerY = (rect.y0 + yScanMax) / 2;
+
+  function idx(localX, localY) {
+    return localY * rectW + localX;
+  }
 
   for (let y = rect.y0; y <= yScanMax; y++) {
-    for (let x = xScanMin; x <= rect.x1; x++) {
+    for (let x = rect.x0; x <= rect.x1; x++) {
+      const localX = x - rect.x0;
+      const localY = y - rect.y0;
+      const startIndex = idx(localX, localY);
+      if (visited[startIndex]) continue;
+      visited[startIndex] = 1;
+
       const i = (y * src.width + x) * 4;
       if (!isDetectableContent(src.data[i], src.data[i + 1], src.data[i + 2], src.data[i + 3])) {
         continue;
       }
-      found = true;
-      if (x < minX) minX = x;
-      if (y < minY) minY = y;
-      if (x > maxX) maxX = x;
-      if (y > maxY) maxY = y;
+
+      const stack = [[x, y]];
+      let area = 0;
+      let minX = x;
+      let minY = y;
+      let maxX = x;
+      let maxY = y;
+
+      while (stack.length > 0) {
+        const [cx, cy] = stack.pop();
+        area += 1;
+        if (cx < minX) minX = cx;
+        if (cy < minY) minY = cy;
+        if (cx > maxX) maxX = cx;
+        if (cy > maxY) maxY = cy;
+
+        for (let ny = cy - 1; ny <= cy + 1; ny++) {
+          if (ny < rect.y0 || ny > yScanMax) continue;
+          for (let nx = cx - 1; nx <= cx + 1; nx++) {
+            if (nx < rect.x0 || nx > rect.x1) continue;
+            if (nx === cx && ny === cy) continue;
+            const nLocalX = nx - rect.x0;
+            const nLocalY = ny - rect.y0;
+            const neighborIndex = idx(nLocalX, nLocalY);
+            if (visited[neighborIndex]) continue;
+            visited[neighborIndex] = 1;
+            const ni = (ny * src.width + nx) * 4;
+            if (isDetectableContent(src.data[ni], src.data[ni + 1], src.data[ni + 2], src.data[ni + 3])) {
+              stack.push([nx, ny]);
+            }
+          }
+        }
+      }
+
+      const componentCenterX = (minX + maxX) / 2;
+      const componentCenterY = (minY + maxY) / 2;
+      const score =
+        area * 1000 -
+        Math.abs(componentCenterX - centerX) * 8 -
+        Math.abs(componentCenterY - centerY) * 4;
+
+      if (!best || score > best.score) {
+        best = { minX, minY, maxX, maxY, score };
+      }
     }
   }
 
-  if (!found) return null;
+  if (!best) return null;
 
   // Expand bounds to reduce over-zooming (tiny crops get scaled up too much).
   // Also add padding to better include outlines/limbs.
   const pad = 14;
-  let x0 = clamp(minX - pad, rect.x0, rect.x1);
-  let y0 = clamp(minY - pad, rect.y0, rect.y1);
-  let x1 = clamp(maxX + pad, rect.x0, rect.x1);
-  let y1 = clamp(maxY + pad, rect.y0, rect.y1);
+  let x0 = clamp(best.minX - pad, rect.x0, rect.x1);
+  let y0 = clamp(best.minY - pad, rect.y0, rect.y1);
+  let x1 = clamp(best.maxX + pad, rect.x0, rect.x1);
+  let y1 = clamp(best.maxY + pad, rect.y0, rect.y1);
 
   const minDim = 120;
   const w = x1 - x0 + 1;
@@ -248,16 +297,24 @@ function copyFrameScaled(dst, dstCol, dstRow, src, srcRect, { flipH = false } = 
       const sx = srcRect.x0 + spx;
       const sy = srcRect.y0 + spy;
       const si = (sy * src.width + sx) * 4;
+      const r = src.data[si];
+      const g = src.data[si + 1];
+      const b = src.data[si + 2];
+      const a = src.data[si + 3];
+
+      if (!shouldCopyPixel(r, g, b, a)) {
+        continue;
+      }
 
       const ddx = flipH ? dw - 1 - dx : dx;
       const tx = baseX + ox + ddx;
       const ty = baseY + oy + dy;
       const di = (ty * dst.width + tx) * 4;
 
-      dst.data[di] = src.data[si];
-      dst.data[di + 1] = src.data[si + 1];
-      dst.data[di + 2] = src.data[si + 2];
-      dst.data[di + 3] = src.data[si + 3];
+      dst.data[di] = r;
+      dst.data[di + 1] = g;
+      dst.data[di + 2] = b;
+      dst.data[di + 3] = a;
     }
   }
 }
@@ -266,6 +323,109 @@ function fillRow(dst, dstRow, frames, { flipH = false } = {}) {
   for (let col = 0; col < OUT_COLS; col++) {
     const frame = frames[Math.min(col, frames.length - 1)];
     copyFrameScaled(dst, col, dstRow, srcPng, frame, { flipH });
+  }
+}
+
+function clearPixel(dst, x, y) {
+  const i = (y * dst.width + x) * 4;
+  dst.data[i] = 0;
+  dst.data[i + 1] = 0;
+  dst.data[i + 2] = 0;
+  dst.data[i + 3] = 0;
+}
+
+function isInsideExpandedBox(a, b, padding) {
+  return (
+    a.x0 >= b.x0 - padding &&
+    a.x1 <= b.x1 + padding &&
+    a.y0 >= b.y0 - padding &&
+    a.y1 <= b.y1 + padding
+  );
+}
+
+function cleanupFrame(dst, frameCol, frameRow) {
+  const baseX = frameCol * FRAME;
+  const baseY = frameRow * FRAME;
+  const visited = new Uint8Array(FRAME * FRAME);
+  const components = [];
+
+  function localIndex(x, y) {
+    return y * FRAME + x;
+  }
+
+  for (let y = 0; y < FRAME; y++) {
+    for (let x = 0; x < FRAME; x++) {
+      const startIndex = localIndex(x, y);
+      if (visited[startIndex]) continue;
+      visited[startIndex] = 1;
+
+      const startAlphaIndex = ((baseY + y) * dst.width + (baseX + x)) * 4 + 3;
+      if (dst.data[startAlphaIndex] === 0) continue;
+
+      const stack = [[x, y]];
+      const pixels = [];
+      let minX = x;
+      let minY = y;
+      let maxX = x;
+      let maxY = y;
+
+      while (stack.length > 0) {
+        const [cx, cy] = stack.pop();
+        pixels.push([cx, cy]);
+        if (cx < minX) minX = cx;
+        if (cy < minY) minY = cy;
+        if (cx > maxX) maxX = cx;
+        if (cy > maxY) maxY = cy;
+
+        for (let ny = cy - 1; ny <= cy + 1; ny++) {
+          if (ny < 0 || ny >= FRAME) continue;
+          for (let nx = cx - 1; nx <= cx + 1; nx++) {
+            if (nx < 0 || nx >= FRAME) continue;
+            if (nx === cx && ny === cy) continue;
+            const neighborIndex = localIndex(nx, ny);
+            if (visited[neighborIndex]) continue;
+            visited[neighborIndex] = 1;
+            const alphaIndex = ((baseY + ny) * dst.width + (baseX + nx)) * 4 + 3;
+            if (dst.data[alphaIndex] === 0) continue;
+            stack.push([nx, ny]);
+          }
+        }
+      }
+
+      components.push({
+        area: pixels.length,
+        bbox: { x0: minX, y0: minY, x1: maxX, y1: maxY },
+        pixels,
+      });
+    }
+  }
+
+  if (components.length <= 1) return;
+
+  const largest = components.reduce((best, component) =>
+    component.area > best.area ? component : best
+  );
+  const areaThreshold = Math.max(48, Math.floor(largest.area * 0.08));
+
+  for (const component of components) {
+    const centerY = (component.bbox.y0 + component.bbox.y1) / 2;
+    const keep =
+      component === largest ||
+      isInsideExpandedBox(component.bbox, largest.bbox, 4) ||
+      (component.area >= areaThreshold && centerY >= largest.bbox.y0);
+
+    if (keep) continue;
+    for (const [x, y] of component.pixels) {
+      clearPixel(dst, baseX + x, baseY + y);
+    }
+  }
+}
+
+function cleanupOutputSheet(dst) {
+  for (let row = 0; row < OUT_ROWS; row++) {
+    for (let col = 0; col < OUT_COLS; col++) {
+      cleanupFrame(dst, col, row);
+    }
   }
 }
 
@@ -348,6 +508,8 @@ for (let col = 0; col < OUT_COLS; col++) {
     copyFrameScaled(dst, col, 11, srcPng, af, { flipH: false });
   }
 }
+
+cleanupOutputSheet(dst);
 
 writePng(OUT_PATH, dst);
 console.log(`Output: ${OUT_PATH}`);

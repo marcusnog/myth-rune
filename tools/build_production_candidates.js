@@ -35,6 +35,48 @@ function copyFileRelative(sourceAbsolute, outputRelativePath, manifestSection, n
   });
 }
 
+function copyOptionalRootTilesetCandidates(outputManifest) {
+  const candidates = [
+    {
+      source: path.join(ROOT, '01.png'),
+      output: path.join('terrain', 'external_library', '01_candidate_tileset.png'),
+      note: 'External terrain candidate 01: strong ground-transition atlas for map polish and expansion studies.',
+    },
+    {
+      source: path.join(ROOT, '02.png'),
+      output: path.join('terrain', 'external_library', '02_candidate_tileset.png'),
+      note: 'External terrain candidate 02: alternate terrain mix with shoreline and stone-path coverage.',
+    },
+    {
+      source: path.join(ROOT, '03.png'),
+      output: path.join('terrain', 'external_library', '03_candidate_tileset.png'),
+      note: 'External terrain candidate 03: darker terrain balance useful for forest-edge expansion.',
+    },
+    {
+      source: path.join(ROOT, '04.png'),
+      output: path.join('terrain', 'external_library', '04_candidate_tileset.png'),
+      note: 'External terrain candidate 04: mixed terrain plus structure/prop sheet useful as an expansion board.',
+    },
+    {
+      source: path.join(ROOT, 'sprites-tileset.png'),
+      output: path.join('terrain', 'external_library', 'sprites_tileset_reference.png'),
+      note: 'External modular reference sheet with terrain, structures, props and transitions for future atlas slicing.',
+    },
+  ];
+
+  for (const candidate of candidates) {
+    if (!fs.existsSync(candidate.source)) {
+      continue;
+    }
+    copyFileRelative(
+      candidate.source,
+      candidate.output,
+      outputManifest.externalTilesetLibrary,
+      candidate.note,
+    );
+  }
+}
+
 function shouldSelect04Asset(asset) {
   const { category, extractedSize } = asset;
   const area = extractedSize.width * extractedSize.height;
@@ -86,6 +128,7 @@ This folder contains the current curated production candidates for Myth Rune sta
 ## Package contents
 - \`terrain/primary\`: current best terrain candidates.
 - \`terrain/fallback\`: fallback terrain candidates from earlier rounds.
+- \`terrain/external_library\`: external tileset candidates staged from the repo root for map improvement and expansion work.
 - \`terrain/reference\`: terrain reference blocks for further prompting.
 - \`props_buildings/primary\`: selected extracted assets from 04 ready for manual naming and promotion.
 - \`props_buildings/fallback_atlases\`: full atlases kept as backup/reference.
@@ -102,6 +145,7 @@ This folder contains the current curated production candidates for Myth Rune sta
 ## Recommended next step
 - Rename the selected 04 props/buildings by function (\`house_small\`, \`well\`, \`torch\`, \`crate\`, etc).
 - Promote only the hand-checked winners into the runtime atlas.
+- Compare \`terrain/external_library\` candidates against the current safe hybrid before expanding into a second map sheet.
 - Keep trees/resources in a separate pass to avoid overloading the starter_town tileset semantics.
 `;
 }
@@ -113,6 +157,7 @@ function main() {
     generatedAt: new Date().toISOString(),
     terrainPrimary: [],
     terrainFallback: [],
+    externalTilesetLibrary: [],
     terrainReference: [],
     propsBuildingsPrimary: [],
     propsBuildingsFallbackAtlases: [],
@@ -156,6 +201,8 @@ function main() {
     outputManifest.terrainFallback,
     'Fallback terrain candidate from 01.',
   );
+
+  copyOptionalRootTilesetCandidates(outputManifest);
 
   const terrainReferenceIds = [
     'terrain_overview_top',

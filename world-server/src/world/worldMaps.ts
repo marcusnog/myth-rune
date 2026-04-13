@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { GatherResourceType, MapId } from "@myth-of-rune/shared";
+import type { GatherResourceType, ItemId, MapId } from "@myth-of-rune/shared";
 import { MAP_DEFINITIONS } from "@myth-of-rune/shared";
 
 interface RawProperty {
@@ -53,10 +53,78 @@ export interface ResourceNodeRuntime {
   interactDistance: number;
   gatherTimeMs: number;
   respawnTimeMs: number;
-  yieldItemId: "wood" | "stone";
+  yieldItemId: ItemId;
   yieldAmount: number;
   requiredTool: "simple_axe" | "simple_pickaxe";
 }
+
+const STONE_VARIANT_BY_NODE_ID: Readonly<
+  Record<
+    string,
+    Extract<GatherResourceType, "stone_deposit" | "copper_deposit" | "iron_deposit" | "silver_deposit">
+  >
+> = Object.freeze({
+  stone_1: "stone_deposit",
+  stone_2: "copper_deposit",
+  stone_3: "iron_deposit",
+  stone_4: "silver_deposit",
+});
+
+const RESOURCE_NODE_RULES: Readonly<
+  Record<
+    GatherResourceType,
+    {
+      interactDistance: number;
+      gatherTimeMs: number;
+      yieldItemId: ItemId;
+      yieldAmount: number;
+      requiredTool: "simple_axe" | "simple_pickaxe";
+    }
+  >
+> = Object.freeze({
+  oak_tree: {
+    interactDistance: 60,
+    gatherTimeMs: 1600,
+    yieldItemId: "wood",
+    yieldAmount: 1,
+    requiredTool: "simple_axe",
+  },
+  pine_tree: {
+    interactDistance: 60,
+    gatherTimeMs: 1750,
+    yieldItemId: "wood",
+    yieldAmount: 1,
+    requiredTool: "simple_axe",
+  },
+  stone_deposit: {
+    interactDistance: 52,
+    gatherTimeMs: 1900,
+    yieldItemId: "stone",
+    yieldAmount: 1,
+    requiredTool: "simple_pickaxe",
+  },
+  copper_deposit: {
+    interactDistance: 52,
+    gatherTimeMs: 2100,
+    yieldItemId: "copper_ore",
+    yieldAmount: 1,
+    requiredTool: "simple_pickaxe",
+  },
+  iron_deposit: {
+    interactDistance: 52,
+    gatherTimeMs: 2350,
+    yieldItemId: "iron_ore",
+    yieldAmount: 1,
+    requiredTool: "simple_pickaxe",
+  },
+  silver_deposit: {
+    interactDistance: 52,
+    gatherTimeMs: 2600,
+    yieldItemId: "silver_ore",
+    yieldAmount: 1,
+    requiredTool: "simple_pickaxe",
+  },
+});
 
 const SHARED_BOUNDS: MapBounds = Object.freeze({
   minX: -1664,
@@ -158,26 +226,34 @@ function loadResourceNodes(): readonly ResourceNodeRuntime[] {
       const tileY = Math.floor(asNumber(readProperty(entry.properties, "tileY"), (entry.y ?? 0) / tileHeight));
       const x = SHARED_BOUNDS.minX + tileX * tileWidth + tileWidth / 2;
       const y = SHARED_BOUNDS.minY + (tileY + 1) * tileHeight - 2;
-      const isStone = resourceTypeRaw === "stone_deposit";
+      const nodeId = (typeof readProperty(entry.properties, "nodeId") === "string"
+        ? (readProperty(entry.properties, "nodeId") as string)
+        : entry.name) ?? `${resourceTypeRaw}:${index}`;
+      const resourceType =
+        resourceTypeRaw === "stone_deposit"
+          ? (STONE_VARIANT_BY_NODE_ID[nodeId] ?? resourceTypeRaw)
+          : resourceTypeRaw;
+      const rules = RESOURCE_NODE_RULES[resourceType];
       return {
-        nodeId: (typeof readProperty(entry.properties, "nodeId") === "string"
-          ? (readProperty(entry.properties, "nodeId") as string)
-          : entry.name) ?? `${resourceTypeRaw}:${index}`,
-        resourceType: resourceTypeRaw,
+        nodeId,
+        resourceType,
         x,
         y,
-        interactDistance: isStone ? 52 : 60,
+        interactDistance: rules.interactDistance,
         gatherTimeMs: Math.max(
           250,
-          Math.floor(asNumber(readProperty(entry.properties, "gatherTimeMs"), isStone ? 1900 : 1650)),
+          Math.floor(asNumber(readProperty(entry.properties, "gatherTimeMs"), rules.gatherTimeMs)),
         ),
         respawnTimeMs: Math.max(
           1000,
           Math.floor(asNumber(readProperty(entry.properties, "respawnTimeMs"), 300000)),
         ),
-        yieldItemId: isStone ? "stone" : "wood",
-        yieldAmount: Math.max(1, Math.floor(asNumber(readProperty(entry.properties, "yieldAmount"), 1))),
-        requiredTool: isStone ? "simple_pickaxe" : "simple_axe",
+        yieldItemId: rules.yieldItemId,
+        yieldAmount: Math.max(
+          1,
+          Math.floor(asNumber(readProperty(entry.properties, "yieldAmount"), rules.yieldAmount)),
+        ),
+        requiredTool: rules.requiredTool,
       } satisfies ResourceNodeRuntime;
     })
     .filter((entry): entry is ResourceNodeRuntime => entry !== null);
