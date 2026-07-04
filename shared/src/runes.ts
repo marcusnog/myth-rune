@@ -1,4 +1,4 @@
-import type { CharacterClassId } from "./character.js";
+﻿import type { CharacterClassId } from "./character.js";
 
 export const RUNE_SLOT_COUNT = 3;
 
@@ -80,10 +80,6 @@ export const RUNE_DEFINITIONS: Readonly<Record<RuneId, RuneDefinition>> = Object
   },
 });
 
-export function emptyEquippedRunes(): Array<RuneId | null> {
-  return Array.from({ length: RUNE_SLOT_COUNT }, () => null);
-}
-
 export function isRuneUnlocked(runeId: RuneId, level: number): boolean {
   return level >= RUNE_DEFINITIONS[runeId].unlockLevel;
 }
@@ -91,7 +87,7 @@ export function isRuneUnlocked(runeId: RuneId, level: number): boolean {
 export function defaultStarterRunesForClass(
   characterClass: CharacterClassId,
 ): Array<RuneId | null> {
-  const slots = emptyEquippedRunes();
+  const slots: Array<RuneId | null> = Array.from({ length: RUNE_SLOT_COUNT }, () => null);
   slots[0] =
     characterClass === "warrior"
       ? "bulwark"

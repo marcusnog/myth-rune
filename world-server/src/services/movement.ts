@@ -7,7 +7,7 @@ import { resolveWorldCollision } from "./mapCollision.js";
  * speed*dt. Keep a small buffer and a practical floor to avoid rubber-banding.
  */
 const MOVE_JITTER_BUFFER_UNITS = 10;
-const MIN_ALLOWED_MOVE_UNITS_PER_TICK = 18;
+const MIN_ALLOWED_MOVE_UNITS_PER_TICK = 10;
 
 export function clampToMap(mapId: MapId, x: number, y: number): { x: number; y: number } {
   const bounds = getMapBounds(mapId);

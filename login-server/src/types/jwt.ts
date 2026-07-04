@@ -1,8 +1,1 @@
-export interface GameJwtPayload {
-  /** User id */
-  sub: string;
-  /** Character id */
-  cid: string;
-  iat?: number;
-  exp?: number;
-}
+﻿export type { GameJwtPayload } from "@myth-of-rune/shared";

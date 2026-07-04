@@ -1,4 +1,4 @@
-import type { IncomingMessage } from "node:http";
+﻿import type { IncomingMessage } from "node:http";
 import type { WebSocket } from "ws";
 import {
   CRAFTING_RECIPE_BY_ID,
@@ -7,7 +7,7 @@ import {
   SKILL_DEFINITIONS,
   WORLD_COMBAT_CONFIG,
   getPortalForPosition,
-  playerAttackRangeForClass,
+  PLAYER_ATTACK_PROFILES,
   worldClientMessageSchema,
   type GatherResourceType,
   type QuestId,
@@ -44,7 +44,7 @@ const MESSAGE_RATE_LIMITS: Readonly<Record<string, number>> = Object.freeze({
 });
 
 
-function sendJson(ws: WebSocket, obj: unknown): void {
+export function sendJson(ws: WebSocket, obj: unknown): void {
   if (ws.readyState === ws.OPEN) {
     ws.send(JSON.stringify(obj));
   }
@@ -952,7 +952,7 @@ async function authenticateConnection(
       progression: initialSnapshot,
       combatConfig: {
         ...WORLD_COMBAT_CONFIG,
-        playerAttackRange: playerAttackRangeForClass(row.character_class),
+        playerAttackRange: PLAYER_ATTACK_PROFILES[row.character_class].range,
       },
       players: room.snapshotForClient(self.mapId),
       mobs: mobs.snapshotMobsForClient(self.mapId),
@@ -1179,6 +1179,4 @@ export async function persistAllPlayers(pool: pg.Pool, redis: Redis): Promise<vo
   }
 }
 
-export function subscribeCombatEvents(_subscriber: Redis, _pool: pg.Pool): void {
-  // Combat is resolved inside the world-server for now.
-}
+

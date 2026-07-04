@@ -1,9 +1,9 @@
-import Phaser from "phaser";
+﻿import Phaser from "phaser";
 import {
   MAP_DEFINITIONS,
   QUEST_DEFINITIONS,
   getPortalForPosition,
-  playerAttackProfileForClass,
+  PLAYER_ATTACK_PROFILES,
   type ProgressionSnapshot,
   type RuneId,
   type MapId,
@@ -69,7 +69,7 @@ interface LootDropEntity {
   x: number;
   y: number;
   marker: Phaser.GameObjects.Container;
-  /** Ícone + anel: animação manual (evita shimmer com roundPixels/zoom). */
+  /** Ãcone + anel: animaÃ§Ã£o manual (evita shimmer com roundPixels/zoom). */
   floater: Phaser.GameObjects.Container;
   floatPhase: number;
   label: Phaser.GameObjects.Text;
@@ -165,7 +165,7 @@ function frameIndexForIcon(
   return row * cols + col;
 }
 
-/** Evita micro-jitter do servidor e não briga com tweens no mesmo GameObject. */
+/** Evita micro-jitter do servidor e nÃ£o briga com tweens no mesmo GameObject. */
 const LOOT_POS_EPS = 0.4;
 
 const LOOT_FLOAT_SPEED = 2.05;
@@ -222,6 +222,7 @@ export class WorldScene extends Phaser.Scene {
   private skillKey!: Phaser.Input.Keyboard.Key;
   private inventoryUnsubscribe: (() => void) | null = null;
   private progressionSnapshot: ProgressionSnapshot | null = null;
+  private waterAnimTimer: Phaser.Time.TimerEvent | null = null;
 
   private maxHp = 100;
   private combatConfig = {
@@ -302,6 +303,7 @@ export class WorldScene extends Phaser.Scene {
       },
     );
     this.syncMapPresentation();
+    this.startWaterAnimation();
     this.footstepSystem = new FootstepSystem(
       this,
       () => this.biomeSystem?.current ?? "forest",
@@ -338,11 +340,13 @@ export class WorldScene extends Phaser.Scene {
       this.worldWidth,
       this.worldHeight,
     );
-    this.cameras.main.setZoom(1.9);
+    this.cameras.main.setZoom(2);
     this.cameras.main.setRoundPixels(true);
 
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.clearStatusTimer();
+      this.waterAnimTimer?.destroy();
+      this.waterAnimTimer = null;
       this.ws?.close();
       this.ws = null;
       this.initData.hud.setInteractionPrompt(null);
@@ -685,7 +689,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------------
-  // Private — map / systems setup
+  // Private â€” map / systems setup
   // ---------------------------------------------------------------------------
 
   private createTilemapWorld(): void {
@@ -727,7 +731,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------------
-  // Private — progression
+  // Private â€” progression
   // ---------------------------------------------------------------------------
 
   private applyProgressionSnapshot(
@@ -785,7 +789,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------------
-  // Private — action systems (gathering + crafting)
+  // Private â€” action systems (gathering + crafting)
   // ---------------------------------------------------------------------------
 
   private updateActionSystems(deltaMs: number): boolean {
@@ -813,7 +817,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------------
-  // Private — static NPCs
+  // Private â€” static NPCs
   // ---------------------------------------------------------------------------
 
   private createStaticNpcs(): void {
@@ -908,7 +912,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------------
-  // Private — interaction UI
+  // Private â€” interaction UI
   // ---------------------------------------------------------------------------
 
   private refreshInteractionUi(): void {
@@ -1042,7 +1046,7 @@ export class WorldScene extends Phaser.Scene {
     return null;
   }
 
-  /** Flutuação só com offset inteiro em Y (sem tween de escala/alpha — evita piscar). */
+  /** FlutuaÃ§Ã£o sÃ³ com offset inteiro em Y (sem tween de escala/alpha â€” evita piscar). */
   private updateLootFloatAnimation(timeMs: number): void {
     const t = timeMs / 1000;
     for (const drop of this.lootDrops.values()) {
@@ -1099,7 +1103,7 @@ export class WorldScene extends Phaser.Scene {
       const ry = Math.round(y);
       const floatPhase = Math.random() * Math.PI * 2;
 
-      // Root = posição do servidor. Filho = ícone + anel de loot (tweens só aqui; não conflita com setPosition).
+      // Root = posiÃ§Ã£o do servidor. Filho = Ã­cone + anel de loot (tweens sÃ³ aqui; nÃ£o conflita com setPosition).
       const marker = this.add.container(rx, ry);
       marker.setDepth(ry - this.worldMinY + 2);
 
@@ -1184,7 +1188,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------------
-  // Private — dialogue
+  // Private â€” dialogue
   // ---------------------------------------------------------------------------
 
   private openDialogue(npc: StaticNpcEntity): void {
@@ -1262,7 +1266,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------------
-  // Private — crafting panel
+  // Private â€” crafting panel
   // ---------------------------------------------------------------------------
 
   private toggleCraftingPanel(): void {
@@ -1272,6 +1276,27 @@ export class WorldScene extends Phaser.Scene {
     this.craftingSystem.togglePanel();
     this.syncCraftingHud();
     this.refreshInteractionUi();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private — water animation
+  // ---------------------------------------------------------------------------
+
+  private startWaterAnimation(): void {
+    const sprites = this.mapWorld?.waterSprites;
+    if (!sprites || sprites.length === 0) return;
+    const tex = this.textures.get("map:starter-town-water");
+    const totalFrames = tex.frameTotal;
+    this.waterAnimTimer = this.time.addEvent({
+      delay: 200,
+      loop: true,
+      callback: () => {
+        for (const sprite of sprites) {
+          const next = (Number(sprite.frame.name) + 1) % totalFrames;
+          sprite.setFrame(next);
+        }
+      },
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -1345,7 +1370,7 @@ export class WorldScene extends Phaser.Scene {
         return;
       }
       case "inventory": {
-        // Nunca trocar a instância de InventoryStore: CraftingSystem mantém referência ao store criado no create().
+        // Nunca trocar a instÃ¢ncia de InventoryStore: CraftingSystem mantÃ©m referÃªncia ao store criado no create().
         this.inventory.setFromServer(msg.payload.inventory);
         this.syncInventoryHud();
         this.syncCraftingHud();
@@ -1480,7 +1505,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------------
-  // Private — entity sync (server state → renderer)
+  // Private â€” entity sync (server state â†’ renderer)
   // ---------------------------------------------------------------------------
 
   private ensureLocalEntity(characterId: string, x: number, y: number): void {
@@ -1772,7 +1797,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------------
-  // Private — error feedback / status
+  // Private â€” error feedback / status
   // ---------------------------------------------------------------------------
 
   private applyErrorFeedback(code: string, message: string): void {
@@ -1825,7 +1850,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------------
-  // Private — local movement
+  // Private â€” local movement
   // ---------------------------------------------------------------------------
 
   private hasMovementIntent(): boolean {
@@ -1929,7 +1954,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------------
-  // Private — collision
+  // Private â€” collision
   // ---------------------------------------------------------------------------
 
   private isBlockedAtWorldPosition(x: number, y: number): boolean {
@@ -2026,7 +2051,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------------
-  // Private — WS send helpers
+  // Private â€” WS send helpers
   // ---------------------------------------------------------------------------
 
   private tryPickupLoot(dropId: string): void {
@@ -2192,7 +2217,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------------
-  // Private — resolve helpers
+  // Private â€” resolve helpers
   // ---------------------------------------------------------------------------
 
   private resolveCharacterClass(classId: string): CharacterClassId {
@@ -2208,7 +2233,7 @@ export class WorldScene extends Phaser.Scene {
     if (!entity || entity.kind !== "player") {
       return "melee";
     }
-    return playerAttackProfileForClass(entity.visual as CharacterClassId).style;
+    return PLAYER_ATTACK_PROFILES[entity.visual as CharacterClassId].style;
   }
 
   private resolveSkillFacing(): Facing {
@@ -2228,3 +2253,4 @@ export class WorldScene extends Phaser.Scene {
     );
   }
 }
+

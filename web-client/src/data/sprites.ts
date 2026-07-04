@@ -11,6 +11,7 @@ export interface DirectionalAnimSpec {
   frames?: number;
   sequences?: Partial<Record<Facing, number[]>>;
   flipX?: Partial<Record<Facing, boolean>>;
+  textureKey?: string;
   fps: number;
   loop: boolean;
 }
@@ -82,7 +83,8 @@ function buildCharacterSpec(textureKey: string, path: string): VisualSpec {
   };
 }
 
-function buildCompactCharacterSpec(textureKey: string, path: string): VisualSpec {
+function buildCompactCharacterSpec(textureKey: string, path: string, gatherRows?: { mining: number; woodcutting: number }): VisualSpec {
+  const gRow = gatherRows ?? { mining: 6, woodcutting: 7 };
   return {
     textureKey,
     path,
@@ -127,25 +129,23 @@ function buildCompactCharacterSpec(textureKey: string, path: string): VisualSpec
     gather: {
       woodcutting: {
         sequences: {
-          up: frameRange(7, 4, 4),
-          down: frameRange(7, 4, 4),
-          left: frameRange(7, 4, 4),
-          right: frameRange(7, 4, 4),
+          up: frameRange(gRow.woodcutting, 0, 2),
+          down: frameRange(gRow.woodcutting, 2, 2),
+          left: frameRange(gRow.woodcutting, 4, 2),
+          right: frameRange(gRow.woodcutting, 6, 2),
         },
         flipX: { right: true },
-        fps: 10,
-        loop: false,
+        fps: 10, loop: false,
       },
       mining: {
         sequences: {
-          up: frameRange(6, 4, 4),
-          down: frameRange(6, 4, 4),
-          left: frameRange(6, 4, 4),
-          right: frameRange(6, 4, 4),
+          up: frameRange(gRow.mining, 0, 2),
+          down: frameRange(gRow.mining, 2, 2),
+          left: frameRange(gRow.mining, 4, 2),
+          right: frameRange(gRow.mining, 6, 2),
         },
         flipX: { right: true },
-        fps: 10,
-        loop: false,
+        fps: 10, loop: false,
       },
     },
     single: {
@@ -158,9 +158,35 @@ function buildCompactCharacterSpec(textureKey: string, path: string): VisualSpec
 export const VISUAL_SPECS: Record<VisualKey, VisualSpec> = {
   warrior: buildCompactCharacterSpec("sheet:warrior", "/sprites/characters/warrior/warrior_walk2.png"),
 
-  rogue: buildCompactCharacterSpec("sheet:rogue", "/sprites/characters/rogue/rogue_walk.png"),
+  rogue: buildCompactCharacterSpec("sheet:rogue", "/sprites/characters/rogue/rogue_walk.png", { mining: 10, woodcutting: 11 }),
   mage: buildCompactCharacterSpec("sheet:mage", "/sprites/characters/mage/mage_walk.png"),
-  archer: buildCharacterSpec("sheet:archer", "/sprites/characters/archer/archer_walk.png"),
+  archer: {
+    ...buildCharacterSpec("sheet:archer", "/sprites/characters/archer/archer_walk.png"),
+    gather: {
+      mining: {
+        sequences: {
+          up: frameRange(6, 0, 2),
+          down: frameRange(6, 2, 2),
+          left: frameRange(6, 4, 2),
+          right: frameRange(6, 6, 2),
+        },
+        flipX: { right: true },
+        textureKey: "sheet:warrior",
+        fps: 10, loop: false,
+      },
+      woodcutting: {
+        sequences: {
+          up: frameRange(7, 0, 2),
+          down: frameRange(7, 2, 2),
+          left: frameRange(7, 4, 2),
+          right: frameRange(7, 6, 2),
+        },
+        flipX: { right: true },
+        textureKey: "sheet:warrior",
+        fps: 10, loop: false,
+      },
+    },
+  },
 
   goblin: {
     textureKey: "sheet:goblin",

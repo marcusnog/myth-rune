@@ -1,4 +1,4 @@
-import { ITEM_IDS, type ItemId } from "./items.js";
+﻿import { type ItemId } from "./items.js";
 
 export interface RecipeMaterial {
   itemId: ItemId;
@@ -102,7 +102,3 @@ export const CRAFTING_RECIPES: CraftingRecipeCatalog = [
 export const CRAFTING_RECIPE_BY_ID: Readonly<Record<string, CraftingRecipe>> = Object.freeze(
   Object.fromEntries(CRAFTING_RECIPES.map((recipe) => [recipe.id, recipe])),
 );
-
-export function isItemId(value: string): value is ItemId {
-  return (ITEM_IDS as readonly string[]).includes(value);
-}

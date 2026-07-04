@@ -1,4 +1,4 @@
-import type { CharacterClassId } from "./character.js";
+﻿import type { CharacterClassId } from "./character.js";
 
 export const SKILL_IDS = [
   "warrior_battle_cry",
@@ -80,12 +80,3 @@ export const SKILL_DEFINITIONS: Readonly<Record<SkillId, SkillDefinition>> =
       effectType: "aoe",
     },
   });
-
-export function skillForClass(classId: CharacterClassId): SkillId | null {
-  for (const skill of Object.values(SKILL_DEFINITIONS)) {
-    if (skill.classId === classId) {
-      return skill.id;
-    }
-  }
-  return null;
-}

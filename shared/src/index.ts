@@ -1,4 +1,4 @@
-export * from "./character.js";
+﻿export * from "./character.js";
 export * from "./combatRules.js";
 export * from "./runes.js";
 export * from "./items.js";
@@ -8,6 +8,7 @@ export * from "./progression.js";
 export * from "./quests.js";
 export * from "./recipes.js";
 export * from "./skills.js";
+export * from "./types.js";
 export * from "./schemas/common.js";
 export * from "./schemas/auth.js";
 export * from "./schemas/world.js";

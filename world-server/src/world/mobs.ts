@@ -1,9 +1,8 @@
-import { randomUUID } from "node:crypto";
+﻿import { randomUUID } from "node:crypto";
 import {
   SKILL_DEFINITIONS,
   WORLD_COMBAT_CONFIG,
-  WORLD_COMBAT_REJECT_MESSAGES,
-  playerAttackRangeForClass,
+  PLAYER_ATTACK_PROFILES,
   type MapId,
   type MobType,
   type SkillId,
@@ -12,7 +11,7 @@ import {
 import { clampToMap } from "../services/movement.js";
 import { findNearestWalkablePosition, resolveWorldCollision } from "../services/mapCollision.js";
 import type { ConnectedPlayer } from "./room.js";
-import { getMobSpawns } from "./worldMaps.js";
+import { getMobSpawns, isInSafezone } from "./worldMaps.js";
 
 interface Mob {
   id: string;
@@ -95,7 +94,12 @@ const MOB_MAX_HEALTH: Readonly<Record<MobType, number>> = Object.freeze({
 const MOB_DETECT_RANGE = 250;
 const MOB_LEASH_RANGE = 320;
 const MOB_RETURN_TO_SPAWN_RANGE = 18;
-const MOB_CHASE_SPEED = 86;
+const MOB_CHASE_SPEEDS: Readonly<Record<MobType, number>> = Object.freeze({
+  goblin: 70,
+  zombie: 58,
+  wolf: 90,
+  ent: 48,
+});
 const MOB_RETURN_SPEED = 92;
 const MOB_WANDER_SPEED = 32;
 const MOB_ATTACK_TELEGRAPH_MS = 260;
@@ -185,11 +189,14 @@ function playerBaseDamage(attacker: ConnectedPlayer): number {
   );
 }
 
+const DAMAGE_VARIANCE = 0.2;
+
 function rollPlayerDamage(
   attacker: ConnectedPlayer,
   rng: () => number,
 ): { damage: number; isCritical?: boolean } {
-  const baseDamage = playerBaseDamage(attacker);
+  const variance = 1 - DAMAGE_VARIANCE + Math.random() * DAMAGE_VARIANCE * 2;
+  const baseDamage = Math.max(1, Math.round(playerBaseDamage(attacker) * variance));
   const isCritical = rollChance(attacker.stats.critChance, rng);
   if (!isCritical) {
     return { damage: baseDamage };
@@ -308,18 +315,18 @@ export function applyPlayerAttack(
   nowMs: number,
   rng: () => number = Math.random,
 ): PlayerAttackResult {
-  const playerAttackRange = playerAttackRangeForClass(attacker.characterClass);
+  const playerAttackRange = PLAYER_ATTACK_PROFILES[attacker.characterClass].range;
   if (nowMs - attacker.lastAttackAt < WORLD_COMBAT_CONFIG.playerAttackCooldownMs) {
-    return { ok: false, code: "COOLDOWN", message: WORLD_COMBAT_REJECT_MESSAGES.COOLDOWN };
+    return { ok: false, code: "COOLDOWN", message: "Basic attack is on cooldown" };
   }
 
   const mob = mapStore(attacker.mapId).get(targetMobId);
   if (!mob) {
-    return { ok: false, code: "NOT_FOUND", message: WORLD_COMBAT_REJECT_MESSAGES.NOT_FOUND };
+    return { ok: false, code: "NOT_FOUND", message: "Mob not found" };
   }
 
   if (dist(attacker.x, attacker.y, mob.x, mob.y) > playerAttackRange) {
-    return { ok: false, code: "OUT_OF_RANGE", message: WORLD_COMBAT_REJECT_MESSAGES.OUT_OF_RANGE };
+    return { ok: false, code: "OUT_OF_RANGE", message: "Mob is out of range" };
   }
 
   attacker.lastAttackAt = nowMs;
@@ -371,7 +378,7 @@ export function applyPlayerAoeAttack(
 ): PlayerAoeAttackResult {
   const radius = SKILL_DEFINITIONS[skillId].impactRadius ?? 0;
   if (radius <= 0) {
-    return { ok: false, code: "NOT_FOUND", message: WORLD_COMBAT_REJECT_MESSAGES.NOT_FOUND };
+    return { ok: false, code: "NOT_FOUND", message: "Mob not found" };
   }
 
   const events: CombatEventPayload[] = [];
@@ -441,10 +448,11 @@ export function tickMobs(
         resetAttackTelegraph(mob);
         moveTowards(mob, mob.spawnX, mob.spawnY, MOB_RETURN_SPEED);
       } else {
+        const targetInSafezone = target != null && isInSafezone(target.player.x, target.player.y);
         const targetWithinLeash =
-          target != null &&
+          target != null && !targetInSafezone &&
           dist(target.player.x, target.player.y, mob.spawnX, mob.spawnY) <= MOB_LEASH_RANGE * 1.1;
-        const canChase = target != null && targetWithinLeash && target.distance <= MOB_DETECT_RANGE;
+        const canChase = target != null && !targetInSafezone && targetWithinLeash && target.distance <= MOB_DETECT_RANGE;
 
         if (canChase && target) {
           const { player, distance } = target;
@@ -501,7 +509,7 @@ export function tickMobs(
             }
           } else {
             resetAttackTelegraph(mob);
-            moveTowards(mob, player.x, player.y, MOB_CHASE_SPEED);
+            moveTowards(mob, player.x, player.y, MOB_CHASE_SPEEDS[mob.type]);
           }
         } else {
           resetAttackTelegraph(mob);

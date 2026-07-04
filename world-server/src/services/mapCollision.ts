@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { MapId } from "@myth-of-rune/shared";
-import { getMapBounds } from "../world/worldMaps.js";
+import { getMapBounds, getNpcBlockers, getPropBlockers } from "../world/worldMaps.js";
 
 interface RawTileLayer {
   name?: string;
@@ -93,9 +93,29 @@ function isBlockedTile(tileX: number, tileY: number): boolean {
   return COLLISION_MAP.collision[tileY * COLLISION_MAP.width + tileX] > 0;
 }
 
+function isBlockedByNpc(x: number, y: number): boolean {
+  for (const npc of getNpcBlockers()) {
+    const dx = Math.abs(x - npc.x);
+    const dy = Math.abs(y - npc.y);
+    if (dx / npc.radiusX + dy / npc.radiusY <= 1) return true;
+  }
+  return false;
+}
+
+function isBlockedByProp(x: number, y: number): boolean {
+  for (const prop of getPropBlockers()) {
+    if (x >= prop.x && x <= prop.x + prop.w && y >= prop.y && y <= prop.y + prop.h) return true;
+  }
+  return false;
+}
+
 export function isBlockedAtWorldPosition(mapId: MapId, x: number, y: number): boolean {
-  return FOOT_PROBES.some(([dx, dy]) =>
-    isBlockedTile(worldToTileX(mapId, x + dx), worldToTileY(mapId, y + dy)),
+  return (
+    FOOT_PROBES.some(([dx, dy]) =>
+      isBlockedTile(worldToTileX(mapId, x + dx), worldToTileY(mapId, y + dy)),
+    ) ||
+    isBlockedByNpc(x, y) ||
+    isBlockedByProp(x, y)
   );
 }
 

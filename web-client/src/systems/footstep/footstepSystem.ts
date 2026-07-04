@@ -49,6 +49,20 @@ const FOOTSTEP_PROFILES: Record<BiomeType, FootstepProfile> = {
     footprintTint: 0xe6f1f8,
     footprintAlpha: 0.52,
   },
+  lake: {
+    burstCount: 3,
+    particleTint: 0x7d8a7a,
+    particleDepthOffset: -2.8,
+    footprintTint: null,
+    footprintAlpha: 0,
+  },
+  mountain: {
+    burstCount: 6,
+    particleTint: 0xc8c0b0,
+    particleDepthOffset: -2.9,
+    footprintTint: 0xb0a898,
+    footprintAlpha: 0.28,
+  },
 };
 
 export class FootstepSystem {

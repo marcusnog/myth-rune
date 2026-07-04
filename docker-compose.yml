@@ -34,10 +34,10 @@ services:
       timeout: 5s
       retries: 10
 
-  # No host port: app services use redis://redis:6379 on the Docker network only.
-  # Avoids clashing with another Redis already bound to localhost:6379.
   redis:
     image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - myth_rune_redis:/data
     command: redis-server --appendonly yes

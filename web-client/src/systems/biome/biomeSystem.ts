@@ -3,7 +3,7 @@ import type { WeatherSystem, WeatherType } from "../weather/weatherSystem";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type BiomeType = "forest" | "snow" | "blizzard" | "village";
+export type BiomeType = "forest" | "snow" | "blizzard" | "village" | "lake" | "mountain";
 
 export interface BiomeZone {
   type: BiomeType;
@@ -27,6 +27,15 @@ export interface BiomeZone {
 
 export const BIOME_ZONES: readonly BiomeZone[] = [
   {
+    type: "mountain",
+    // Northern mountain range (collision ring)
+    relX: 128, relY: 64, relWidth: 704, relHeight: 736,
+    weather: "snow",
+    tint: 0x8b9ba8,
+    tintAlpha: 0.22,
+    label: "Montanhas Geladas",
+  },
+  {
     type: "blizzard",
     // Upper-left corner — deepest snow zone
     relX: 0,
@@ -49,6 +58,15 @@ export const BIOME_ZONES: readonly BiomeZone[] = [
     tint: 0x9bbcde,
     tintAlpha: 0.18,
     label: "Terras de Gelo",
+  },
+  {
+    type: "lake",
+    // Southeast lake
+    relX: 2816, relY: 2816, relWidth: 768, relHeight: 768,
+    weather: "light_rain",
+    tint: 0x6b8fa0,
+    tintAlpha: 0.15,
+    label: "Lago da Neblina",
   },
 ];
 

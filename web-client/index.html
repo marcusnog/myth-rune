@@ -60,6 +60,35 @@
         pointer-events: none;
       }
 
+      @keyframes authFloat {
+        0%, 100% { transform: translate(0, 0); opacity: 0; }
+        20% { opacity: 0.35; }
+        80% { opacity: 0.35; }
+      }
+
+      #app::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(2px 2px at 15% 85%, #b8d9a0, transparent),
+          radial-gradient(3px 3px at 32% 42%, #b8d9a0, transparent),
+          radial-gradient(3px 3px at 48% 12%, #d4edc0, transparent),
+          radial-gradient(2px 2px at 65% 72%, #b8d9a0, transparent),
+          radial-gradient(4px 4px at 80% 28%, #d4edc0, transparent),
+          radial-gradient(2px 2px at 92% 58%, #b8d9a0, transparent),
+          radial-gradient(3px 3px at 8% 32%, #d4edc0, transparent),
+          radial-gradient(2px 2px at 55% 90%, #b8d9a0, transparent),
+          radial-gradient(3px 3px at 75% 5%, #c6e3b0, transparent),
+          radial-gradient(2px 2px at 38% 62%, #d4edc0, transparent),
+          radial-gradient(3px 3px at 5% 55%, #b8d9a0, transparent),
+          radial-gradient(2px 2px at 88% 78%, #c6e3b0, transparent);
+        background-repeat: no-repeat;
+        animation: authFloat 4s ease-in-out infinite;
+        filter: blur(1px);
+      }
+
       .auth-shell {
         width: min(560px, calc(100vw - 40px));
         position: relative;
@@ -105,6 +134,11 @@
         cursor: pointer;
       }
 
+      .auth-mobile-tab:hover {
+        background: linear-gradient(180deg, #61361e, #28150a);
+        border-color: #8a5a30;
+      }
+
       .auth-mobile-tab.active {
         box-shadow: inset 0 0 0 1px #ca8a45;
         color: #ffe1aa;
@@ -117,11 +151,19 @@
       }
 
       #app[data-auth-mode="login"] #auth-card-register {
-        display: none;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(10px);
+        position: absolute;
       }
 
       #app[data-auth-mode="register"] #auth-card-login {
-        display: none;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(10px);
+        position: absolute;
       }
 
       .auth-card {
@@ -130,6 +172,16 @@
         border-radius: 10px;
         box-shadow: inset 0 0 0 1px #2a170b, 0 14px 32px #0008;
         overflow: hidden;
+        transition: opacity 280ms ease, transform 280ms ease, visibility 0ms linear 280ms;
+        grid-row: 1;
+        grid-column: 1;
+      }
+
+      .auth-grid .auth-card:not([style*="position: absolute"]) {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+        transition: opacity 280ms ease, transform 280ms ease, visibility 0ms linear 0ms;
       }
 
       .auth-card-head {
@@ -174,10 +226,16 @@
         outline: none;
       }
 
+      @keyframes inputGlow {
+        0%, 100% { box-shadow: 0 0 0 2px #a46f3844, 0 0 8px #a46f3822; }
+        50% { box-shadow: 0 0 0 3px #cf8d4666, 0 0 16px #cf8d4633; }
+      }
+
       .auth-field input:focus,
       .auth-field select:focus {
         border-color: #cf8d46;
         box-shadow: 0 0 0 2px #a46f3833;
+        animation: inputGlow 2s ease-in-out infinite;
       }
 
       .auth-check {
@@ -206,9 +264,11 @@
       .auth-link {
         color: #66c4f8;
         text-decoration: none;
+        transition: color 120ms ease;
       }
 
       .auth-link:hover {
+        color: #8fd4ff;
         text-decoration: underline;
       }
 
@@ -226,11 +286,27 @@
         font-family: "Cinzel", serif;
         font-size: 17px;
         cursor: pointer;
+        transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+      }
+
+      .auth-btn:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.12);
+      }
+
+      .auth-btn:active {
+        transform: translateY(0);
+        filter: brightness(0.95);
       }
 
       .auth-btn.primary {
         color: #f9ddab;
         background: linear-gradient(180deg, #a8431f, #63270f);
+        box-shadow: 0 2px 8px #a8431f33;
+      }
+
+      .auth-btn.primary:hover {
+        box-shadow: 0 4px 14px #a8431f55;
       }
 
       .auth-btn.secondary {
@@ -241,6 +317,8 @@
       .auth-btn:disabled {
         opacity: 0.6;
         cursor: not-allowed;
+        transform: none;
+        filter: none;
       }
 
       .status {
@@ -300,49 +378,44 @@
       }
 
       .hud-panel {
-        background: linear-gradient(180deg, #1c1a19f0, #090909f2);
+        background: linear-gradient(180deg, #1c1a19e0, #090909e8);
         border: 2px solid #6f6248;
         box-shadow:
           inset 0 0 0 1px #24201a,
           inset 0 0 18px #00000099,
           0 10px 24px #00000088;
-        border-radius: 9px;
+        border-radius: 10px;
         pointer-events: auto;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
       }
 
       #hud-party {
         position: absolute;
         top: 14px;
         left: 14px;
-        width: 452px;
-        min-height: 126px;
-        padding: 12px;
+        width: 380px;
+        min-height: 106px;
+        padding: 10px;
         display: grid;
-        grid-template-columns: 96px 1fr;
-        gap: 14px;
-        background: linear-gradient(180deg, #1f1d1bf6, #0b0b0bf2);
-        border-color: #78694d;
-        border-radius: 6px;
-        box-shadow:
-          inset 0 0 0 1px #2b2620,
-          inset 0 0 28px #000000aa,
-          0 6px 18px #00000088;
+        grid-template-columns: 74px 1fr;
+        gap: 12px;
       }
 
       .portrait {
         border: 2px solid #62553f;
-        border-radius: 3px;
+        border-radius: 4px;
         background: linear-gradient(180deg, #242322, #0d0d0d);
-        width: 96px;
-        height: 96px;
+        width: 74px;
+        height: 74px;
         display: grid;
         place-items: center;
         font-family: "Cinzel", serif;
-        font-size: 38px;
+        font-size: 30px;
         color: #a69472;
         box-shadow: inset 0 0 18px #000000aa;
         outline: 1px solid #2e2821;
-        outline-offset: -4px;
+        outline-offset: -3px;
       }
 
       .party-meta {
@@ -480,7 +553,7 @@
 
       .resource-bar.resource-health,
       .resource-bar.resource-mana {
-        height: 24px;
+        height: 20px;
         border-radius: 4px;
       }
 
@@ -609,23 +682,34 @@
       }
 
       .menu-btn {
-        min-height: 92px;
+        min-height: 84px;
         border: 2px solid #57504a;
         border-radius: 8px;
         background: linear-gradient(180deg, #1d1d1cf0, #0d0d0df0);
         color: #d3c7a8;
         font-family: "Cinzel", serif;
         font-size: 12px;
-        padding: 9px 6px 10px;
+        padding: 8px 5px 8px;
         display: grid;
-        gap: 7px;
+        gap: 5px;
         justify-items: center;
         align-content: center;
+        cursor: pointer;
+        transition: border-color 120ms ease, box-shadow 120ms ease, color 120ms ease;
+      }
+
+      .menu-btn:hover {
+        border-color: #8a7a5a;
+        color: #f0dfb8;
+      }
+
+      .menu-btn:active {
+        border-color: #a89060;
       }
 
       .menu-icon-shell {
-        width: 42px;
-        height: 42px;
+        width: 36px;
+        height: 36px;
         border: 2px solid #887148;
         border-radius: 6px;
         background: linear-gradient(180deg, #3a311f, #17120c);
@@ -635,14 +719,19 @@
       }
 
       .menu-icon-svg {
-        width: 28px;
-        height: 28px;
+        width: 24px;
+        height: 24px;
         filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.75));
       }
 
       .menu-btn.is-active {
         color: #ffd979;
         box-shadow: inset 0 0 0 1px #d4a44d, 0 0 14px #d4a44d22;
+      }
+
+      .menu-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
       }
 
       .menu-btn.ghost {
@@ -658,7 +747,7 @@
         max-width: 100%;
         line-height: 1.1;
         text-align: center;
-        font-size: 11px;
+        font-size: 10px;
         letter-spacing: 0.02em;
         white-space: normal;
         overflow-wrap: anywhere;
@@ -695,7 +784,7 @@
       }
 
       .panel-view {
-        display: none;
+        display: block;
         position: absolute;
         right: 0;
         bottom: calc(100% + 10px);
@@ -710,10 +799,17 @@
           inset 0 0 0 1px #221f1b,
           inset 0 0 18px #00000088,
           0 12px 28px #000000aa;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(4px);
+        transition: opacity 180ms ease, transform 180ms ease, visibility 0ms linear 180ms;
       }
 
       .panel-view.is-active {
-        display: block;
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+        transition: opacity 180ms ease, transform 180ms ease, visibility 0ms linear 0ms;
       }
 
       #panel-map,
@@ -729,8 +825,8 @@
         border-radius: 4px;
         border: 2px solid #5b544b;
         background:
-          linear-gradient(180deg, #101716d8, #070807cc),
-          url("/maps/starter_town/preview.png") center / cover no-repeat;
+          linear-gradient(180deg, #0d1a14d8, #060c08cc),
+          repeating-conic-gradient(#172e1f 0% 25%, #1d3626 0% 50%) 0 0 / 16px 16px;
         position: relative;
         overflow: hidden;
         box-shadow:
@@ -815,6 +911,17 @@
         font-size: 18px;
         line-height: 1;
         box-shadow: 0 2px 6px #00000066;
+        cursor: pointer;
+        transition: background 120ms ease, border-color 120ms ease;
+      }
+
+      .minimap-corner-btn:hover {
+        background: linear-gradient(180deg, #554828, #2d2515);
+        border-color: #b89558;
+      }
+
+      .minimap-corner-btn:active {
+        background: linear-gradient(180deg, #2f2716, #17120b);
       }
 
       .minimap-corner-btn.top-left {
@@ -917,6 +1024,13 @@
         background: linear-gradient(180deg, #4a2b18, #23140b);
         color: #f0d7aa;
         cursor: pointer;
+        transition: border-color 120ms ease, box-shadow 120ms ease;
+      }
+
+      .rune-slot:hover,
+      .rune-card:hover,
+      #rune-clear:hover {
+        border-color: #8a5a30;
       }
 
       .rune-slot {
@@ -1030,6 +1144,12 @@
         font-size: 12px;
         padding: 5px 10px;
         cursor: pointer;
+        transition: color 120ms ease, box-shadow 120ms ease;
+      }
+
+      .bag-tab:hover {
+        color: #f0d4a0;
+        border-color: #7a5530;
       }
 
       .bag-tab.is-active {
@@ -1092,6 +1212,13 @@
         place-items: center;
         font-size: 11px;
         font-weight: 700;
+        cursor: pointer;
+        transition: border-color 120ms ease, box-shadow 120ms ease;
+      }
+
+      .slot:hover {
+        border-color: #9a6a3a;
+        box-shadow: inset 0 0 0 1px #9a6a3a44;
       }
 
       .inventory-slot {
@@ -1176,14 +1303,13 @@
         position: absolute;
         left: 14px;
         bottom: 14px;
-        width: 408px;
-        height: 292px;
-        max-height: 292px;
-        padding: 10px 10px 9px;
+        width: 380px;
+        height: 280px;
+        max-height: 280px;
+        padding: 8px 10px 8px;
         display: flex;
         flex-direction: column;
-        background: linear-gradient(180deg, #171615f8, #080808fa);
-        border-radius: 6px;
+        border: 1px solid #5b5448;
       }
 
       #chat-tabs {
@@ -1205,6 +1331,7 @@
         font-size: 13px;
         cursor: pointer;
         text-align: center;
+        transition: color 120ms ease, background 120ms ease, box-shadow 120ms ease;
       }
 
       .chat-tab:first-child {
@@ -1214,6 +1341,11 @@
       .chat-tab:last-child {
         border-right-width: 2px;
         border-top-right-radius: 6px;
+      }
+
+      .chat-tab:hover {
+        color: #b8ae96;
+        background: linear-gradient(#272422, #14130f);
       }
 
       .chat-tab.is-active {
@@ -1308,42 +1440,45 @@
         left: 50%;
         transform: translateX(-50%);
         display: grid;
-        grid-template-columns: repeat(6, 52px);
-        gap: 6px;
+        grid-template-columns: repeat(6, 54px);
+        gap: 5px;
         justify-content: center;
-        padding: 10px;
-        border: 2px solid #6f6248;
-        border-radius: 6px;
-        background: linear-gradient(180deg, #171615f8, #080808fa);
+        padding: 8px;
+        border: 1px solid #5b5448;
+        border-radius: 10px;
+        background: linear-gradient(180deg, #171615d8, #080808e0);
         box-shadow:
           inset 0 0 0 1px #23201c,
           inset 0 0 18px #00000099,
           0 10px 20px #00000088;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
       }
 
       .hotbar-slot {
-        width: 52px;
-        height: 52px;
-        border: 2px solid #5d564d;
-        border-radius: 4px;
-        background: linear-gradient(180deg, #171717, #080808);
-        box-shadow: inset 0 0 0 1px #0c0c0c, 0 2px 6px #00000066;
+        width: 54px;
+        height: 54px;
+        border: 2px solid #4d473e;
+        border-radius: 8px;
+        background: linear-gradient(180deg, #1a1a1a, #0a0a0a);
+        box-shadow: inset 0 0 0 1px #0c0c0c, 0 2px 4px #00000066;
         position: relative;
         display: grid;
         place-items: center;
         cursor: pointer;
         flex: 0 0 auto;
         overflow: hidden;
+        transition: border-color 120ms ease, box-shadow 120ms ease;
       }
 
       .hotbar-slot:hover {
-        border-color: #cfaf6a;
-        box-shadow: inset 0 0 0 1px #23201c, 0 0 10px #cfaf6a33;
+        border-color: #b89f6a;
+        box-shadow: inset 0 0 0 1px #23201c, 0 0 12px #b89f6a44;
       }
 
       .hotbar-slot.is-active {
         border-color: #e1c056;
-        box-shadow: inset 0 0 0 1px #2e2718, 0 0 14px #e1c05644;
+        box-shadow: inset 0 0 0 1px #2e2718, 0 0 18px #e1c05655, 0 0 4px #e1c05688 inset;
       }
 
       .hotbar-slot::before,
@@ -1378,15 +1513,19 @@
         top: 3px;
         left: 4px;
         font-size: 10px;
-        color: #9d9382;
+        color: #b8ad98;
         font-family: "IBM Plex Mono", monospace;
+        font-weight: 600;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        z-index: 1;
       }
 
       .hotbar-icon {
         width: 34px;
         height: 34px;
         object-fit: contain;
-        image-rendering: auto;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
         transform: none;
         filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.7));
       }
@@ -1398,6 +1537,9 @@
         font-size: 10px;
         color: #ead284;
         font-family: "IBM Plex Mono", monospace;
+        font-weight: 600;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        z-index: 1;
       }
 
       #interaction-prompt {
@@ -1726,6 +1868,16 @@
         font-size: 12px;
         padding: 6px 12px;
         cursor: pointer;
+        transition: background 120ms ease, box-shadow 120ms ease, color 120ms ease;
+      }
+
+      .dialogue-btn:hover {
+        background: linear-gradient(180deg, #5d3b22, #301a0e);
+        color: #f7e3b8;
+      }
+
+      .dialogue-btn:active {
+        background: linear-gradient(180deg, #3a2212, #1c0f07);
       }
 
       .dialogue-btn.primary {
@@ -1790,6 +1942,16 @@
         gap: 4px;
         text-align: left;
         cursor: pointer;
+        transition: background 120ms ease, border-color 120ms ease;
+      }
+
+      .npc-action-btn:hover {
+        background: linear-gradient(180deg, #5d3820, #2e190f);
+        border-color: #8a5a30;
+      }
+
+      .npc-action-btn:active {
+        background: linear-gradient(180deg, #3a2212, #1a0e07);
       }
 
       .npc-action-btn.is-muted {
@@ -1854,6 +2016,16 @@
         font-size: 15px;
         padding: 10px 16px;
         cursor: pointer;
+        transition: background 120ms ease, box-shadow 120ms ease;
+      }
+
+      #death-respawn:hover {
+        background: linear-gradient(180deg, #a0522a, #5a2812);
+        box-shadow: 0 0 14px #8c442255;
+      }
+
+      #death-respawn:active {
+        background: linear-gradient(180deg, #6e331a, #3a1a0c);
       }
 
       #crafting-panel {
@@ -1916,6 +2088,12 @@
         gap: 3px;
         text-align: left;
         cursor: pointer;
+        transition: border-color 120ms ease, background 120ms ease;
+      }
+
+      .crafting-recipe:hover {
+        border-color: #8a5a30;
+        background: linear-gradient(180deg, #55331d, #28160d);
       }
 
       .crafting-recipe.is-active {
@@ -1995,6 +2173,17 @@
         font-size: 12px;
         padding: 8px 12px;
         cursor: pointer;
+        transition: background 120ms ease, box-shadow 120ms ease;
+      }
+
+      #crafting-submit:hover,
+      #crafting-close:hover {
+        background: linear-gradient(180deg, #5d3b22, #301a0e);
+      }
+
+      #crafting-submit:active,
+      #crafting-close:active {
+        background: linear-gradient(180deg, #3a2212, #1c0f07);
       }
 
       #crafting-submit:disabled {
@@ -2036,6 +2225,16 @@
         border: 1px solid #6f4d28;
         background: linear-gradient(180deg, #5f3b20, #2a180d);
         color: #f5d7a1;
+        cursor: pointer;
+        transition: background 120ms ease;
+      }
+
+      #settings-close:hover {
+        background: linear-gradient(180deg, #754a28, #352012);
+      }
+
+      #settings-close:active {
+        background: linear-gradient(180deg, #4a2d16, #201208);
       }
 
       .hidden {
@@ -2044,15 +2243,37 @@
 
       @media (max-width: 980px) {
         #hud-right {
-          width: 276px;
+          width: 260px;
         }
 
         #hud-chat {
-          width: min(408px, calc(100% - 28px));
+          width: min(340px, calc(100% - 28px));
         }
 
         #settings-modal {
-          right: 265px;
+          right: 250px;
+        }
+      }
+
+      @media (max-width: 820px) {
+        #hud-party {
+          width: 320px;
+          grid-template-columns: 60px 1fr;
+        }
+
+        .portrait {
+          width: 60px;
+          height: 60px;
+          font-size: 24px;
+        }
+
+        #hud-right {
+          width: 240px;
+        }
+
+        #hud-chat {
+          width: min(300px, calc(100% - 28px));
+          height: 240px;
         }
       }
 
@@ -2066,6 +2287,18 @@
           display: none;
         }
 
+        #hud-party {
+          width: auto;
+          right: 14px;
+          grid-template-columns: 44px 1fr;
+        }
+
+        .portrait {
+          width: 44px;
+          height: 44px;
+          font-size: 18px;
+        }
+
         #hud-hotbar {
           left: 10px;
           right: 10px;
@@ -2073,6 +2306,12 @@
           overflow-x: auto;
           justify-content: flex-start;
           padding-bottom: 4px;
+          grid-template-columns: repeat(12, 44px);
+        }
+
+        .hotbar-slot {
+          width: 44px;
+          height: 44px;
         }
 
         #interaction-prompt,

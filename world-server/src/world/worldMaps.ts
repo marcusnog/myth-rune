@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+﻿import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { GatherResourceType, ItemId, MapId } from "@myth-of-rune/shared";
@@ -273,11 +273,93 @@ export function getMobSpawns(mapId: MapId): readonly { x: number; y: number }[] 
   return mapId === "forest_edge" ? FOREST_EDGE_MOB_SPAWNS : DEFAULT_MOB_SPAWNS;
 }
 
-export function getResourceNodes(mapId: MapId): readonly ResourceNodeRuntime[] {
-  void mapId;
+export function getResourceNodes(): readonly ResourceNodeRuntime[] {
   return RESOURCE_NODES;
 }
 
-export function findResourceNode(mapId: MapId, nodeId: string): ResourceNodeRuntime | null {
-  return getResourceNodes(mapId).find((node) => node.nodeId === nodeId) ?? null;
+export function findResourceNode(_mapId: MapId, nodeId: string): ResourceNodeRuntime | null {
+  return getResourceNodes().find((node) => node.nodeId === nodeId) ?? null;
 }
+
+// ── Blockers ──────────────────────────────────────────────────────────────────
+
+export interface NpcBlocker {
+  x: number;
+  y: number;
+  radiusX: number;
+  radiusY: number;
+}
+
+export interface PropBlockerRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+function loadRuntimePropBlockers(): readonly PropBlockerRect[] {
+  const layoutPath = resolve(
+    dirname(fileURLToPath(import.meta.url)),
+    "../../../web-client/public/maps/starter_town/runtime_props/layout.json",
+  );
+  const raw = JSON.parse(readFileSync(layoutPath, "utf-8")) as {
+    placements?: Array<{
+      tileX?: number;
+      tileY?: number;
+      blocker?: { width?: number; height?: number; offsetX?: number; offsetY?: number };
+    }>;
+  };
+  if (!Array.isArray(raw.placements)) return [];
+  const TW = 32, TH = 32;
+  const blockers: PropBlockerRect[] = [];
+  for (const p of raw.placements) {
+    const b = p.blocker;
+    if (!b || b.width == null || b.height == null) continue;
+    const cx = SHARED_BOUNDS.minX + (p.tileX ?? 0) * TW + TW / 2 + (b.offsetX ?? 0);
+    const by = SHARED_BOUNDS.minY + ((p.tileY ?? 0) + 1) * TH + (b.offsetY ?? 0);
+    blockers.push({ x: cx - b.width / 2, y: by - b.height, w: b.width, h: b.height });
+  }
+  return Object.freeze(blockers);
+}
+
+// ponytail: safezone is a circle around the village spawn; keeps new players safe from mobs
+const VILLAGE_SAFEZONE = Object.freeze({ x: 384, y: 256, radius: 280 });
+
+export function isInSafezone(x: number, y: number): boolean {
+  const dx = x - VILLAGE_SAFEZONE.x;
+  const dy = y - VILLAGE_SAFEZONE.y;
+  return dx * dx + dy * dy <= VILLAGE_SAFEZONE.radius * VILLAGE_SAFEZONE.radius;
+}
+
+const TILE_W = 32, TILE_H = 32;
+
+function tileWorldX(tileX: number): number {
+  return SHARED_BOUNDS.minX + tileX * TILE_W + TILE_W / 2;
+}
+
+function tileWorldY(tileY: number): number {
+  return SHARED_BOUNDS.minY + (tileY + 1) * TILE_H - 2;
+}
+
+const VILLAGE_NPC_BLOCKERS: readonly NpcBlocker[] = Object.freeze([
+  { x: tileWorldX(64), y: tileWorldY(67), radiusX: 10, radiusY: 7 },
+  { x: tileWorldX(72), y: tileWorldY(60), radiusX: 10, radiusY: 7 },
+  { x: tileWorldX(60), y: tileWorldY(57), radiusX: 10, radiusY: 7 },
+  { x: tileWorldX(76), y: tileWorldY(67), radiusX: 10, radiusY: 7 },
+  { x: tileWorldX(56), y: tileWorldY(76), radiusX: 12, radiusY: 8 },
+  { x: tileWorldX(64), y: tileWorldY(50), radiusX: 11, radiusY: 8 },
+  { x: tileWorldX(50), y: tileWorldY(66), radiusX: 11, radiusY: 8 },
+  { x: tileWorldX(72), y: tileWorldY(74), radiusX: 10, radiusY: 7 },
+]);
+
+const RUNTIME_PROP_BLOCKERS: readonly PropBlockerRect[] = loadRuntimePropBlockers();
+
+export function getNpcBlockers(): readonly NpcBlocker[] {
+  return VILLAGE_NPC_BLOCKERS;
+}
+
+export function getPropBlockers(): readonly PropBlockerRect[] {
+  return RUNTIME_PROP_BLOCKERS;
+}
+
+

@@ -129,6 +129,11 @@ export class EntityRenderer {
     sprite.setScale(spec.scale);
     sprite.setOrigin(render.originX, render.originY);
 
+    // ponytail: zombie reuses the goblin sheet; green tint distinguishes them without a custom sheet
+    if (params.mobType === "zombie") {
+      sprite.setTint(0xaad6aa);
+    }
+
     const entity: RenderedEntity = {
       id: params.id,
       kind: params.kind,
@@ -676,8 +681,8 @@ export class EntityRenderer {
         x: puff.x + dir.x * 14,
         y: puff.y + dir.y * 10,
         alpha: 0,
-        scaleX: 1.9,
-        scaleY: 1.9,
+        scaleX: 2,
+        scaleY: 2,
         duration: 260 + i * 30,
         ease: "Quad.Out",
         onComplete: () => puff.destroy(),
@@ -1101,12 +1106,13 @@ export class EntityRenderer {
     directional: DirectionalAnimSpec,
   ): void {
     const spec = VISUAL_SPECS[visual];
+    const texKey = directional.textureKey ?? spec.textureKey;
     for (const facing of ["up", "down", "left", "right"] as Facing[]) {
       const key = this.animKey(visual, action, facing);
       if (this.scene.anims.exists(key)) continue;
       this.scene.anims.create({
         key,
-        frames: this.directionalFrameRefs(spec.textureKey, spec.columns, directional, facing),
+        frames: this.directionalFrameRefs(texKey, spec.columns, directional, facing),
         frameRate: directional.fps,
         repeat: directional.loop ? -1 : 0,
       });

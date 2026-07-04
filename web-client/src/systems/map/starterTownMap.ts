@@ -21,6 +21,8 @@ export const MAP_PROPS_LAYOUT_KEY = "map:starter-town-props-layout";
 export const MAP_RESOURCE_ATLAS_IMAGE_KEY = "map:starter-town-resources";
 export const MAP_RESOURCE_ATLAS_METADATA_KEY = "map:starter-town-resources-meta";
 export const MAP_AUTUMN_TREE_WIND_TEXTURE_KEY = "map:starter-town-autumn-tree-wind";
+export const MAP_WATER_TILESET_KEY = "map:starter-town-water";
+export const MAP_WATER_TILESET_FRAMES = 1536; // 48 cols × 32 rows
 export const MAP_SAFE_CENTER_TILE_X = 64.5;
 export const MAP_SAFE_CENTER_TILE_Y = 64.5;
 export const RESOURCE_OBJECT_LAYER = "resource_nodes";
@@ -161,6 +163,7 @@ export interface StarterTownWorld {
   propSprites: readonly Phaser.GameObjects.GameObject[];
   propBlockers: readonly StarterTownPropBlocker[];
   animatedTileGroups: readonly AnimatedTileGroup[];
+  waterSprites: readonly Phaser.GameObjects.Sprite[];
 }
 
 interface RawProperty {
@@ -385,6 +388,10 @@ export function preloadStarterTownAssets(scene: Phaser.Scene): void {
       frameHeight: 64,
     },
   );
+  scene.load.spritesheet(MAP_WATER_TILESET_KEY, "/maps/starter_town/tileset-agua.png", {
+    frameWidth: 32,
+    frameHeight: 32,
+  });
 }
 
 export function ensureStarterTownTileFrames(scene: Phaser.Scene): void {
@@ -601,15 +608,28 @@ export function buildStarterTownWorld(scene: Phaser.Scene): StarterTownWorld {
   collisionLayer?.setVisible(false);
   collisionLayer?.setCollisionByExclusion([-1, 0]);
 
-  const waterFrameIndices = resolveAnimatedWaterFrameIndices(scene);
-  const waterFrameSet = new Set(waterFrameIndices);
-  const animatedWaterTiles: Phaser.Tilemaps.Tile[] = [];
-  for (const layer of renderLayers) {
-    layer.forEachTile((tile) => {
-      if (waterFrameSet.has(tile.index)) {
-        animatedWaterTiles.push(tile);
+  const waterLayer = renderLayers.find((l) => l.layer.name === "water") ?? null;
+  const tw = tilemap.tileWidth, th = tilemap.tileHeight;
+  const waterSprites: Phaser.GameObjects.Sprite[] = [];
+  const waterFrameSet = new Set(resolveAnimatedWaterFrameIndices(scene));
+  if (waterLayer && scene.textures.exists(MAP_WATER_TILESET_KEY)) {
+    const tex = scene.textures.get(MAP_WATER_TILESET_KEY);
+    const texW = tex.source[0].width, texH = tex.source[0].height;
+    const cols = texW / tw;
+    for (let ty = 0; ty < tilemap.height; ty++) {
+      for (let tx = 0; tx < tilemap.width; tx++) {
+        const tile = waterLayer.getTileAt(tx, ty);
+        if (!tile || !waterFrameSet.has(tile.index)) continue;
+        const worldX = mapOffsetX + tx * tw + tw / 2;
+        const worldY = mapOffsetY + ty * th + th / 2;
+        const baseCol = ((tx * 7 + ty * 13) % (texW / tw));
+        const baseRow = ((tx * 11 + ty * 5) % (texH / th));
+        const sprite = scene.add.sprite(worldX, worldY, MAP_WATER_TILESET_KEY, baseRow * (texW / tw) + baseCol);
+        sprite.setDepth(-92);
+        waterSprites.push(sprite);
       }
-    });
+    }
+    waterLayer.setVisible(false);
   }
 
   const { propSprites, propBlockers } = buildRuntimePropSprites(
@@ -636,16 +656,8 @@ export function buildStarterTownWorld(scene: Phaser.Scene): StarterTownWorld {
     resourceNodes,
     propSprites,
     propBlockers,
-    animatedTileGroups:
-      animatedWaterTiles.length > 0
-        ? [
-            {
-              frameIndices: waterFrameIndices,
-              frameDurationMs: 220,
-              tiles: animatedWaterTiles,
-            },
-          ]
-        : [],
+    animatedTileGroups: [],
+    waterSprites,
   };
 }
 

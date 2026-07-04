@@ -1,4 +1,4 @@
-import http from "node:http";
+﻿import http from "node:http";
 import express from "express";
 import { WebSocketServer } from "ws";
 import { Redis } from "ioredis";
@@ -6,11 +6,12 @@ import { config } from "./config.js";
 import { pool } from "./db.js";
 import { renderMetrics } from "./services/metrics.js";
 import { logError, logInfo } from "./services/logger.js";
-import { attachWorldHandlers, persistAllPlayers, subscribeCombatEvents, tickPlayerActivities } from "./world/wsHandler.js";
+import { attachWorldHandlers, persistAllPlayers, tickPlayerActivities, sendJson } from "./world/wsHandler.js";
 import * as characterRepository from "./repositories/characterRepository.js";
 import * as mobs from "./world/mobs.js";
 import * as loot from "./world/loot.js";
 import * as room from "./world/room.js";
+import { isInSafezone } from "./world/worldMaps.js";
 
 const app = express();
 app.disable("x-powered-by");
@@ -137,17 +138,15 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: "/ws" });
 
 const redis = new Redis(config.redisUrl);
-const subscriber = new Redis(config.redisUrl);
 
 attachWorldHandlers(wss, pool, redis);
-subscribeCombatEvents(subscriber, pool);
 void loot.configureLootPersistence(redis).catch((err) => {
   logError("loot_persistence_init_failed", { error: String(err) });
 });
 
 mobs.initMobs();
 
-const MOB_TICK_S = 0.16;
+const MOB_TICK_MS = 160;
 setInterval(() => {
   const players = room.allPlayers();
   void (async () => {
@@ -155,8 +154,15 @@ setInterval(() => {
     if (players.length === 0) {
       return;
     }
+    for (const player of players) {
+      if (isInSafezone(player.x, player.y) && player.health < player.stats.maxHealth) {
+        player.health = Math.min(player.stats.maxHealth, player.health + 1);
+        sendJson(player.socket, { type: "stats", payload: { health: player.health, maxHealth: player.stats.maxHealth } });
+      }
+    }
+
     const { changedMaps, combatEventsByMap } = mobs.tickMobs(
-      MOB_TICK_S,
+      MOB_TICK_MS / 1000,
       players,
       Date.now(),
     );
@@ -193,7 +199,7 @@ setInterval(() => {
   })().catch((err) => {
     logError("mob_tick_error", { error: String(err) });
   });
-}, Math.round(MOB_TICK_S * 1000));
+}, MOB_TICK_MS);
 
 server.listen(config.port, () => {
   logInfo("world-server listening", { port: config.port, env: config.nodeEnv });
@@ -213,7 +219,6 @@ async function gracefulShutdown(signal: string): Promise<void> {
     } catch {}
   });
   await persistAllPlayers(pool, redis);
-  await subscriber.quit().catch(() => undefined);
   await redis.quit().catch(() => undefined);
   await pool.end().catch(() => undefined);
   server.close(() => process.exit(0));
@@ -227,3 +232,5 @@ process.on("SIGINT", () => {
 process.on("SIGTERM", () => {
   void gracefulShutdown("SIGTERM");
 });
+
+

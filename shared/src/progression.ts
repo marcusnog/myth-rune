@@ -1,4 +1,4 @@
-import {
+﻿import {
   baseStatsForClass,
   moveSpeedToWorldUnits,
   type CharacterClassId,
@@ -53,14 +53,6 @@ export function experienceRequiredForLevel(level: number): number {
   }
   const previousLevel = level - 1;
   return 70 + previousLevel * 40 + previousLevel * previousLevel * 18;
-}
-
-export function totalExperienceForLevel(level: number): number {
-  let total = 0;
-  for (let nextLevel = 2; nextLevel <= level; nextLevel += 1) {
-    total += experienceRequiredForLevel(nextLevel);
-  }
-  return total;
 }
 
 export function levelFromExperience(experience: number): number {
@@ -134,7 +126,13 @@ export function buildProgressionSnapshot(
 ): ProgressionSnapshot {
   const safeExperience = Math.max(0, Math.floor(experience));
   const level = levelFromExperience(safeExperience);
-  const currentLevelBaseXp = totalExperienceForLevel(level);
+  const currentLevelBaseXp = (() => {
+    let total = 0;
+    for (let nextLevel = 2; nextLevel <= level; nextLevel++) {
+      total += experienceRequiredForLevel(nextLevel);
+    }
+    return total;
+  })();
   const nextLevelRequirement =
     level >= MAX_CHARACTER_LEVEL ? 0 : experienceRequiredForLevel(level + 1);
   const experienceIntoLevel = Math.max(0, safeExperience - currentLevelBaseXp);

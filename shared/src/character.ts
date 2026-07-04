@@ -1,4 +1,4 @@
-export const CharacterClass = {
+﻿export const CharacterClass = {
   Warrior: "warrior",
   Mage: "mage",
   Rogue: "rogue",
@@ -6,13 +6,6 @@ export const CharacterClass = {
 } as const;
 
 export type CharacterClassId = (typeof CharacterClass)[keyof typeof CharacterClass];
-
-export const CHARACTER_CLASSES: readonly CharacterClassId[] = [
-  CharacterClass.Warrior,
-  CharacterClass.Mage,
-  CharacterClass.Rogue,
-  CharacterClass.Archer,
-] as const;
 
 export interface BaseStats {
   maxHealth: number;
@@ -29,7 +22,7 @@ export interface BaseStats {
  * Godot and web clients move in pixel-like world units, while class balance
  * keeps compact moveSpeed points.
  */
-export const MOVE_SPEED_WORLD_MULTIPLIER = 55;
+export const MOVE_SPEED_WORLD_MULTIPLIER = 42;
 
 export const CLASS_BALANCE_TABLE: Readonly<Record<CharacterClassId, BaseStats>> =
   Object.freeze({

@@ -1,13 +1,12 @@
-import Phaser from "phaser";
+﻿import Phaser from "phaser";
 import {
   SKILL_DEFINITIONS,
-  skillForClass,
   type SkillDefinition,
   type SkillId,
 } from "@myth-of-rune/shared";
 import type { CharacterClassId } from "@myth-of-rune/shared";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export interface ActiveBuff {
   type: "speed" | "combat";
@@ -16,7 +15,7 @@ export interface ActiveBuff {
   multiplier: number;
 }
 
-// ─── SkillSystem ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ SkillSystem â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export class SkillSystem {
   public readonly skillId: SkillId | null;
@@ -39,14 +38,14 @@ export class SkillSystem {
     classId: CharacterClassId,
     private readonly scene: Phaser.Scene,
   ) {
-    this.skillId = skillForClass(classId);
+    this.skillId = (Object.values(SKILL_DEFINITIONS).find((s) => s.classId === classId)?.id ?? null);
     this.definition = this.skillId ? SKILL_DEFINITIONS[this.skillId] : null;
     if (this.definition) {
       this.buildOverlay();
     }
   }
 
-  // ── Gameplay ─────────────────────────────────────────────────────────────────
+  // â”€â”€ Gameplay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   get speedMultiplier(): number {
     if (
@@ -119,7 +118,7 @@ export class SkillSystem {
     this.lockedOverlay = null;
   }
 
-  // ── Overlay ───────────────────────────────────────────────────────────────────
+  // â”€â”€ Overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   private buildOverlay(): void {
     if (!this.definition) return;
@@ -241,3 +240,5 @@ export class SkillSystem {
     }
   }
 }
+
+
